@@ -26,4 +26,7 @@ class User(AbstractUser):
         verbose_name='Роль'
     )
 
+    class Meta:
+        ordering = ('-id',)
+
 
