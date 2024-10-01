@@ -10,7 +10,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
 
 
-class SendConfirmCodeSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email')
+
+
+class GetTokenSerializer(serializers.Serializer):
+    confirmation_code = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)

@@ -42,13 +42,12 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == admin.role_value
 
-
     class Meta:
         ordering = ('-id',)
 
 
 @receiver(post_save, sender=User)
-def post_save(instance, created):
+def post_save(instance, created, **kwargs):
     if created:
         confirmation_code = '1235'
         instance.confirmation_code = confirmation_code
