@@ -8,3 +8,9 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
         model = User
+
+
+class SendConfirmCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email')
