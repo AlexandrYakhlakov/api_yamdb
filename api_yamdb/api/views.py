@@ -12,8 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    # permission_classes = (permissions.IsAuthenticated, IsAdminRole)
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated, IsAdminRole)
     serializer_class = UserSerializer
     pagination_class = pagination.LimitOffsetPagination
     queryset = User.objects.all()
@@ -26,7 +25,7 @@ def user_registration(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data, status=201)
+        return Response(serializer.data, status=200)
 
     return Response(
         serializer.errors,
@@ -43,7 +42,7 @@ def get_token(request):
     user = User.objects.filter(username=data['username'])
     if not user.exists():
         return Response(
-            {'message': 'Пользователь не найден'},
+            dict(message='Пользователь не найден'),
             status=404
         )
     user = user.first()
