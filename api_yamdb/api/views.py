@@ -1,11 +1,10 @@
 from django.db import IntegrityError
+from django.core.mail import send_mail
 from rest_framework import viewsets, permissions, pagination
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
-from django.core.mail import send_mail
-
 
 from .permissions import IsAdminRole
 from .serializers import (
@@ -13,6 +12,7 @@ from .serializers import (
 )
 from reviews.models import User
 
+import uuid
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdminRole)
@@ -51,7 +51,7 @@ def auth_signup(request):
             status=400
         )
     if not create:
-        user.confirmation_code = 12345
+        user.confirmation_code = uuid.uuid4().hex
         user.save()
     send_mail(
         subject='Код для входа',
