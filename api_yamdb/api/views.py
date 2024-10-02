@@ -18,6 +18,9 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     lookup_field = 'username'
 
+    def perform_update(self, serializer):
+        ...
+
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
