@@ -1,14 +1,16 @@
-from django.shortcuts import render
 from rest_framework import viewsets, permissions, pagination
-# Create your views here.
-from .permissions import IsAdminRole
-from .serializers import (
-    UserSerializer, UserRegistrationSerializer, GetTokenSerializer
-)
-from reviews.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action
+from django.db import  IntegrityError
+
+
+from .permissions import IsAdminRole
+from .serializers import (
+    UserSerializer, AuthSignupSerializer, GetTokenSerializer
+)
+from reviews.models import User
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -18,21 +20,42 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     lookup_field = 'username'
 
+    @action(
+        methods=('PATCH', 'GET'),
+        detail=False,
+        url_path='me',
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def auth_user_info(self, request):
+        if request.method == 'GET':
+            ...
+
+        if request.method == 'PATCH':
+            ...
+
     def perform_update(self, serializer):
         ...
 
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-def user_registration(request):
-    serializer = UserRegistrationSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=200)
+def auth_signup(request):
+    serializer = AuthSignupSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        user, create = User.objects.get_or_create(**serializer.validated_data)
+    except IntegrityError:
+        return Response(
+            dict(message='Пользователь с таким логином или email уже существует'),
+            status=400
+        )
+    if not create:
+        user.confirmation_code = 12345
+        user.save()
 
     return Response(
-        serializer.errors,
-        status=400
+        {**serializer.validated_data},
+        status=200
     )
 
 

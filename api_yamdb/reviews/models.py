@@ -22,19 +22,18 @@ class User(AbstractUser):
         verbose_name='Роль',
         blank=True
     )
-
     bio = models.CharField(
         blank=True,
         max_length=500,
         verbose_name='Биография'
     )
-
     confirmation_code = models.CharField(
         blank=True,
         null=True,
         default=None,
         max_length=255
     )
+    email = models.EmailField(blank=False, unique=True)
 
     @property
     def is_admin(self):
