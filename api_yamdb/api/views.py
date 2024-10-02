@@ -1,9 +1,10 @@
+from django.db import IntegrityError
 from rest_framework import viewsets, permissions, pagination
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
-from django.db import  IntegrityError
+from django.core.mail import send_mail
 
 
 from .permissions import IsAdminRole
@@ -52,7 +53,13 @@ def auth_signup(request):
     if not create:
         user.confirmation_code = 12345
         user.save()
-
+    send_mail(
+        subject='Код для входа',
+        message=f'Код для входа {user.confirmation_code}',
+        from_email='author@mail.ru',
+        recipient_list=(user.email,),
+        fail_silently=False
+    )
     return Response(
         {**serializer.validated_data},
         status=200

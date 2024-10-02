@@ -25,9 +25,6 @@ class AuthSignupSerializer(serializers.Serializer):
         return username
 
 
-
-
-
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(required=True)
     username = serializers.CharField(required=True)
