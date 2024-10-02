@@ -1,7 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 from collections import namedtuple
 
@@ -45,10 +43,3 @@ class User(AbstractUser):
     class Meta:
         ordering = ('-id',)
 
-
-# @receiver(post_save, sender=User)
-# def post_save(instance, created, **kwargs):
-#     if created:
-#         confirmation_code = '1235'
-#         instance.confirmation_code = confirmation_code
-#         instance.save()
