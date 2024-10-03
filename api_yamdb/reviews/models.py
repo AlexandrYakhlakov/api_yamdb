@@ -1,12 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.validators import MinValueValidator, MaxValueValidator
 
-from collections import namedtuple
 
 from api.constants import (
     LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
 from api.validators import validator_year_title
+
+
+from collections import namedtuple
 
 
 Role = namedtuple('Role', ('role_value', 'widget_value'))
@@ -143,3 +148,43 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name[:LEN_OF_SYMBL]
+      
+class Review(models.Model):
+    text = models.TextField()
+    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        verbose_name='Рейтинг произведения'
+    )
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='reviews'
+    )
+    title = models.OneToOneField(
+        Title, on_delete=models.CASCADE, related_name='reviews'
+    )
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        ordering = ['-pub_date']
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+       
+class Comment(models.Model):
+    text = models.TextField()
+    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments'
+    )
+    review = models.ForeignKey(
+        Review, on_delete=models.CASCADE, related_name='comments'
+    )
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        ordering = ['-pub_date']
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'

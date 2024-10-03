@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.db import IntegrityError
 from django.core.mail import send_mail
 from rest_framework import filters, viewsets, permissions, pagination
@@ -11,10 +11,11 @@ from rest_framework import serializers
 from api.permissions import AdminOrReadOnly, IsAdminRole
 from api.serializers import (
     CategorySerializer, GenreSerializer, GetTokenSerializer, TitleSerializer,
-    UserSerializer, AuthSignupSerializer, GetTokenSerializer, AuthUserInfoSerializer
+    UserSerializer, AuthSignupSerializer, GetTokenSerializer, AuthUserInfoSerializer, ReviewSerializer, CommentSerializer
 )
 from api.viewsets import CreateListDestroyViewSet
-from reviews.models import Category, Genre, Title, User
+from reviews.models import Category, Genre, Title, User, Review, Comment
+
 
 import uuid
 
@@ -119,6 +120,34 @@ def get_token(request):
         dict(username=user.username, token=str(token)),
         status=200
     )
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAdminRole,]
+
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs['title_id'])
+
+    def get_queryset(self):
+        return self.get_title().reviews.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAdminRole,]
+
+    def get_review(self):
+        return get_object_or_404(Review, pk=self.kwargs['review_id'])
+    
+    def get_queryset(self):
+        return self.get_review().comments.all()
+    
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
 
 
 class TitleViewSet(viewsets.ModelViewSet):
