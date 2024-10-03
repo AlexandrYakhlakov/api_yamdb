@@ -6,15 +6,15 @@ class IsAdminRole(permissions.BasePermission):
         return request.user.is_admin
 
 
-# class AdminOrReadOnly(permissions.BasePermission):
-#     """Проверяем пользователя.
+class AdminOrReadOnly(permissions.BasePermission):
+    """Проверяем пользователя.
 
-#     Если пользовтель не админ - предоставляем только чтение.
-#     """
-#     def has_permission(self, request, view):
-#         return (
-#             request.method in permissions.SAFE_METHODS
-#             or (
-#                 request.user.is_authenticated
-#                 and request.user.is_admin)
-#         )
+    Если пользовтель не админ - предоставляем только чтение.
+    """
+    def has_permission(self, request, view):
+        return (
+            request.method in permissions.SAFE_METHODS
+            or (
+                request.user.is_authenticated
+                and request.user.is_admin)
+        )

@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from rest_framework import viewsets, permissions, pagination
+from rest_framework import filters, viewsets, permissions, pagination
 # Create your views here.
-from .permissions import IsAdminRole
-from .serializers import (
-    UserSerializer, UserRegistrationSerializer, GetTokenSerializer
+from api.permissions import AdminOrReadOnly, IsAdminRole
+from api.serializers import (
+    CategorySerializer, GenreSerializer, GetTokenSerializer, TitleSerializer,
+    UserSerializer, UserRegistrationSerializer
 )
-from reviews.models import User
+from api.viewsets import CreateListDestroyViewSet
+from reviews.models import Category, Genre, Title, User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -56,3 +58,39 @@ def get_token(request):
         dict(username=user.username, token=str(token)),
         status=200
     )
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Класс для выполнения операций с моделью Title.
+
+    -в поле queryset - выбираем объект модели, с которой будет работать вьюсет;
+    -в поле serializer_class - указываем, какой сериализатор будет применён
+    для валидации и сериализации;
+    """
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+    permission_classes = [AdminOrReadOnly]
+    # Прописываем разрешенные методы:
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+
+class GenreViewSet(CreateListDestroyViewSet):
+    """Класс для выполнения операций с моделью Genre."""
+
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [AdminOrReadOnly]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+
+
+class CategoryViewSet(CreateListDestroyViewSet):
+    """Класс для выполнения операций с моделью Genre."""
+
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [AdminOrReadOnly]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'

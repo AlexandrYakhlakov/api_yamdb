@@ -5,7 +5,9 @@ from django.dispatch import receiver
 
 from collections import namedtuple
 
-from api.constants import LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION, MAX_LENGTH_NAME
+from api.constants import (
+    LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
+)
 from api.validators import validator_year_title
 
 
@@ -76,7 +78,7 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         'Genre',
         blank=True,
-        null=True,
+        # null=True,
         related_name='titles',
         verbose_name='Жанр',
         help_text='К какому жанру относится произведение',
@@ -113,6 +115,7 @@ class Genre(models.Model):
         help_text='К какому жанру относится произведение'
     )
     slug = models.SlugField(
+        max_length=MAX_LENGTH_SLUG,
         unique=True,
         verbose_name='Слаг жанра',
         help_text=('Идентификатор страницы для URL; разрешены символы '
@@ -137,6 +140,7 @@ class Category(models.Model):
         help_text='Название категории произведения',
     )
     slug = models.SlugField(
+        max_length=MAX_LENGTH_SLUG,
         unique=True,
         verbose_name='Слаг категории',
         help_text=('Идентификатор страницы для URL; разрешены символы '
