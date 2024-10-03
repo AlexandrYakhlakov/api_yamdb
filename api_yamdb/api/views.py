@@ -1,41 +1,68 @@
 from django.db import IntegrityError
 from django.core.mail import send_mail
-from rest_framework import viewsets, permissions, pagination
+from rest_framework import viewsets, permissions, pagination, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
+from rest_framework import serializers
 
 from .permissions import IsAdminRole
 from .serializers import (
-    UserSerializer, AuthSignupSerializer, GetTokenSerializer
+    UserSerializer, AuthSignupSerializer, GetTokenSerializer, AuthUserInfoSerializer
 )
 from reviews.models import User
 
 import uuid
 
+
+class UserPagination(pagination.PageNumberPagination):
+    page_size = 10
+
+
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdminRole)
     serializer_class = UserSerializer
-    pagination_class = pagination.LimitOffsetPagination
+    pagination_class = UserPagination
     queryset = User.objects.all()
     lookup_field = 'username'
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+
+    def perform_create(self,  serializer):
+        username_exists = User.objects.filter(
+            username=serializer.validated_data['username']
+        ).exists()
+        email_exists = User.objects.filter(
+            email=serializer.validated_data['email']
+        ).exists()
+
+        if username_exists or email_exists:
+            raise serializers.ValidationError((
+                dict(message='Пользователь с таким именем уже существует.'))
+            )
+        serializer.save()
 
     @action(
-        methods=('PATCH', 'GET'),
+        methods=['PATCH', 'GET'],
         detail=False,
         url_path='me',
         permission_classes=(permissions.IsAuthenticated,)
     )
     def auth_user_info(self, request):
         if request.method == 'GET':
-            ...
-
+            serializer = AuthUserInfoSerializer(instance=request.user)
+            return Response(serializer.data, status=200)
         if request.method == 'PATCH':
-            ...
-
-    def perform_update(self, serializer):
-        ...
+            serializer = AuthUserInfoSerializer(
+                instance=request.user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=200)
 
 
 @api_view(['POST'])
