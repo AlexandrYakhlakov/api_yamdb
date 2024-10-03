@@ -6,7 +6,7 @@ from api.serializers import (
     CategorySerializer, GenreSerializer, GetTokenSerializer, TitleSerializer,
     UserSerializer, UserRegistrationSerializer
 )
-from api.viewsets import CreateListDestroyViewSet
+from api.viewsets import GenreAndCategoryCreateListDestroyViewSet
 from reviews.models import Category, Genre, Title, User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -67,6 +67,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     -в поле serializer_class - указываем, какой сериализатор будет применён
     для валидации и сериализации;
     """
+
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     permission_classes = [AdminOrReadOnly]
@@ -74,23 +75,16 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 
 
-class GenreViewSet(CreateListDestroyViewSet):
+class GenreViewSet(GenreAndCategoryCreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [AdminOrReadOnly]
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(GenreAndCategoryCreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AdminOrReadOnly]
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'
+
