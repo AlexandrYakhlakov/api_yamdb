@@ -1,11 +1,13 @@
 from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, pagination
 # Create your views here.
 from .permissions import IsAdminRole
 from .serializers import (
-    UserSerializer, UserRegistrationSerializer, GetTokenSerializer
+    UserSerializer, UserRegistrationSerializer, GetTokenSerializer,
+    ReviewSerializer, CommentSerializer
 )
-from reviews.models import User
+from reviews.models import User, Review, Comment, Title
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -56,3 +58,32 @@ def get_token(request):
         dict(username=user.username, token=str(token)),
         status=200
     )
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAdminRole,]
+
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs['title_id'])
+
+    def get_queryset(self):
+        return self.get_title().reviews.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAdminRole,]
+
+    def get_review(self):
+        return get_object_or_404(Review, pk=self.kwargs['review_id'])
+    
+    def get_queryset(self):
+        return self.get_review().comments.all()
+    
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
+        
