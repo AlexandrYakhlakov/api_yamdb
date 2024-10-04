@@ -37,7 +37,8 @@ class User(AbstractUser):
     confirmation_code = models.CharField(
         blank=True,
         null=True,
-        default=None
+        default=None,
+        max_length=36,
     )
     email = models.EmailField(blank=False, unique=True)
 

@@ -4,9 +4,10 @@ from django.core.mail import send_mail
 from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
-    filters, pagination, permissions, status, serializers, viewsets
+    filters, permissions, status, serializers, viewsets
 )
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -23,14 +24,9 @@ from api.viewsets import CreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 
-class UserPagination(pagination.PageNumberPagination):
-    page_size = 10
-
-
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdminRole)
     serializer_class = UserSerializer
-    pagination_class = UserPagination
     queryset = User.objects.all()
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
@@ -121,6 +117,8 @@ def get_token(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     token = RefreshToken.for_user(user).access_token
+    user.last_login = timezone.now()
+    user.save()
     return Response(
         dict(username=user.username, token=str(token)),
         status=status.HTTP_200_OK
