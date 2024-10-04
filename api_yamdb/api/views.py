@@ -1,23 +1,26 @@
-from django.shortcuts import get_object_or_404, render
-from django.db import IntegrityError
+import uuid
+
 from django.core.mail import send_mail
-from rest_framework import filters, viewsets, permissions, pagination
-from rest_framework.decorators import api_view, permission_classes, action
+from django.db import IntegrityError
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import (
+    filters, pagination, permissions, status, serializers, viewsets
+)
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import serializers
 
-
-from api.permissions import AdminOrReadOnly, IsAdminRole
+from api.filters import TitleFilter
+from api.permissions import AdminOrReadOnly, IsAdminRole, IsInModeratorGroup
 from api.serializers import (
-    CategorySerializer, GenreSerializer, GetTokenSerializer, TitleSerializer,
-    UserSerializer, AuthSignupSerializer, GetTokenSerializer, AuthUserInfoSerializer, ReviewSerializer, CommentSerializer
+    AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
+    CommentSerializer, GenreSerializer, GetTokenSerializer,
+    ReviewSerializer, TitleSerializer, UserSerializer
 )
 from api.viewsets import CreateListDestroyViewSet
-from reviews.models import Category, Genre, Title, User, Review, Comment
-
-
-import uuid
+from reviews.models import Category, Genre, Review, Title, User
 
 
 class UserPagination(pagination.PageNumberPagination):
@@ -57,7 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def auth_user_info(self, request):
         if request.method == 'GET':
             serializer = AuthUserInfoSerializer(instance=request.user)
-            return Response(serializer.data, status=200)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         if request.method == 'PATCH':
             serializer = AuthUserInfoSerializer(
                 instance=request.user,
@@ -66,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response(serializer.data, status=200)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -78,8 +81,10 @@ def auth_signup(request):
         user, create = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
         return Response(
-            dict(message='Пользователь с таким логином или email уже существует'),
-            status=400
+            dict(
+                message='Пользователь с таким логином или email уже существует'
+            ),
+            status=status.HTTP_400_BAD_REQUEST
         )
     if not create:
         user.confirmation_code = uuid.uuid4().hex
@@ -93,7 +98,7 @@ def auth_signup(request):
     )
     return Response(
         {**serializer.validated_data},
-        status=200
+        status=status.HTTP_200_OK
     )
 
 
@@ -107,24 +112,27 @@ def get_token(request):
     if not user.exists():
         return Response(
             dict(message='Пользователь не найден'),
-            status=404
+            status=status.HTTP_404_NOT_FOUND
         )
     user = user.first()
     if user.confirmation_code != data['confirmation_code']:
         return Response(
             dict(message='Некорректный код подтверждения'),
-            status=400
+            status=status.HTTP_400_BAD_REQUEST
         )
     token = RefreshToken.for_user(user).access_token
     return Response(
         dict(username=user.username, token=str(token)),
-        status=200
+        status=status.HTTP_200_OK
     )
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [IsAdminRole,]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsInModeratorGroup,
+    ]
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs['title_id'])
@@ -133,12 +141,23 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        try:
+            serializer.save(
+                author=self.request.user, title=self.get_title()
+            )
+        except IntegrityError:
+            raise serializers.ValidationError(
+                'Вы уже оставляли отзыв на это произведение.'
+            )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAdminRole,]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsInModeratorGroup
+    ]
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
     def get_review(self):
         return get_object_or_404(Review, pk=self.kwargs['review_id'])
@@ -157,16 +176,18 @@ class TitleViewSet(viewsets.ModelViewSet):
     -в поле serializer_class - указываем, какой сериализатор будет применён
     для валидации и сериализации;
     """
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('-rating')
     serializer_class = TitleSerializer
     permission_classes = [AdminOrReadOnly]
-    # Прописываем разрешенные методы:
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
 class GenreViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
-
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [AdminOrReadOnly]
@@ -177,7 +198,6 @@ class GenreViewSet(CreateListDestroyViewSet):
 
 class CategoryViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
-
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AdminOrReadOnly]
