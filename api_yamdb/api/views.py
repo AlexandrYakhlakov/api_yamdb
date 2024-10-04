@@ -33,7 +33,7 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ('username',)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    def perform_create(self,  serializer):
+    def perform_create(self, serializer):
         username_exists = User.objects.filter(
             username=serializer.validated_data['username']
         ).exists()
@@ -159,10 +159,10 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_review(self):
         return get_object_or_404(Review, pk=self.kwargs['review_id'])
-    
+
     def get_queryset(self):
         return self.get_review().comments.all()
-    
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
 
