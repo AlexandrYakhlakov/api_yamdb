@@ -1,7 +1,9 @@
-from rest_framework import serializers
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from reviews.models import Category, Genre, Title, User, Review, Comment
-from django.shortcuts import get_object_or_404
+from rest_framework import serializers
+
+from reviews.models import (
+    Category, Comment, Genre, Review, Title, User
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -54,17 +56,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    def validate_author(self, value):
-        user = self.context['reuest'].user
-        title = get_object_or_404(
-            Title, id=self.context['view'].kwargs.get('title_id')
-        )
-        if Review.objects.filter(author=user, title=title).exists():
-            raise serializers.ValidationError(
-                'Оставить отзыв можно лишь один раз!'
-            )
-        return value
-
     class Meta:
         model = Review
         fields = (
@@ -105,25 +96,30 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
         model = Category
 
-    def create(self, validated_data):
-        """Возвращаем экземпляр объекта сериализации."""
-        return Category.objects.create(**validated_data)
-
 
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализации и десериализации данных, связанных с моделью Title."""
-
-    category = serializers.SlugRelatedField(
-        slug_field='slug',
-        queryset=Category.objects.all()
-    )
-    genre = serializers.SlugRelatedField(
-        slug_field='slug',
-        queryset=Genre.objects.all(),
-        many=True
-    )
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        fields = (
+            'id', 'name', 'year', 'description', 'genre', 'category', 'rating'
+        )
         read_only_fields = ('genre', 'category',)
         model = Title
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.context['request'].method in ['PATCH', 'POST']:
+            self.fields['category'] = serializers.SlugRelatedField(
+                slug_field='slug',
+                queryset=Category.objects.all()
+            )
+            self.fields['genre'] = serializers.SlugRelatedField(
+                slug_field='slug',
+                queryset=Genre.objects.all(),
+                many=True
+            )
+        elif self.context['request'].method == 'GET':
+            self.fields['category'] = CategorySerializer()
+            self.fields['genre'] = GenreSerializer(many=True)
