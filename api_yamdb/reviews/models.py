@@ -168,13 +168,15 @@ class ContentBase(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews'
+        User, on_delete=models.CASCADE,
+        related_name='%(class)ss',
     )
 
     def __str__(self):
         return self.text[:LEN_OF_SYMBL]
 
     class Meta:
+        abstract = True
         ordering = ('-pub_date', )
 
 
@@ -197,7 +199,7 @@ class Review(ContentBase):
                 fields=('author', 'title'),
                 name='unique_author_title'
             ),
-        )
+        ) # ПРОВЕРКА НА УНИКАЛЬНОСТЬ НЕ РАБОТАЕТ
 
 
 class Comment(ContentBase):
