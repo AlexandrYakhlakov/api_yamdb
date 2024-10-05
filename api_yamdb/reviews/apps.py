@@ -7,4 +7,4 @@ class ReviewsConfig(AppConfig):
     verbose_name = "Портал авторских произведений"
 
     def ready(self):
-        import reviews.signals
+        import reviews.signals # noqa
