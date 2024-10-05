@@ -5,7 +5,9 @@ from django.conf import settings
 from django.core.management import BaseCommand
 from django.utils import timezone
 
-from reviews.models import Category, Comment, Genre, Review, Title, User
+from reviews.models import (
+    Category, Comment, Genre, Review, Title, User, TitleGenre
+)
 
 
 class Command(BaseCommand):
@@ -15,8 +17,10 @@ class Command(BaseCommand):
         Category: 'category.csv',
         Genre: 'genre.csv',
         Title: 'titles.csv',
+        TitleGenre: 'genre_title.csv',
         Review: 'review.csv',
         Comment: 'comments.csv',
+
     }
 
     def handle(self, *args, **kwargs):
