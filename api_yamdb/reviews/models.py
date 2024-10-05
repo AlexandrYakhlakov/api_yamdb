@@ -75,6 +75,7 @@ class Title(models.Model):
         related_name='titles',
         verbose_name='Жанр',
         help_text='К какому жанру относится произведение',
+        through='TitleGenre'
     )
     category = models.ForeignKey(
         'Category',
@@ -122,6 +123,14 @@ class Genre(models.Model):
 
     def __str__(self) -> str:
         return self.name[:LEN_OF_SYMBL]
+
+
+class TitleGenre(models.Model):
+    title = models.ForeignKey('Title', on_delete=models.CASCADE)
+    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "reviews_title_genre"
 
 
 class Category(models.Model):
