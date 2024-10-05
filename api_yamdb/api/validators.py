@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 
 def validator_year_title(value):
     """Валидатор проверки года выпуска произведения.
-
     Год выпуска не может быть больше текущего года.
     """
     if value > date.today().year:
