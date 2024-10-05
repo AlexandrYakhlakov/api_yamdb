@@ -5,6 +5,3 @@ class ReviewsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'reviews'
     verbose_name = "Портал авторских произведений"
-
-    def ready(self):
-        import reviews.signals # noqa

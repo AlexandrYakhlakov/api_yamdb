@@ -74,7 +74,7 @@ def auth_signup(request):
     serializer = AuthSignupSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     try:
-        user, create = User.objects.get_or_create(**serializer.validated_data)
+        user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
         return Response(
             dict(
@@ -82,9 +82,8 @@ def auth_signup(request):
             ),
             status=status.HTTP_400_BAD_REQUEST
         )
-    if not create:
-        user.confirmation_code = uuid.uuid4().hex
-        user.save()
+    user.confirmation_code = uuid.uuid4().hex
+    user.save()
     send_mail(
         subject='Код для входа',
         message=f'Код для входа {user.confirmation_code}',
