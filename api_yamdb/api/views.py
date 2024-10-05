@@ -20,7 +20,7 @@ from api.serializers import (
     CommentSerializer, GenreSerializer, GetTokenSerializer,
     ReviewSerializer, TitleSerializer, UserSerializer
 )
-from api.viewsets import CreateListDestroyViewSet
+from api.viewsets import GenreAndCategoryCreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 
@@ -184,21 +184,13 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
-class GenreViewSet(CreateListDestroyViewSet):
+class GenreViewSet(GenreAndCategoryCreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [AdminOrReadOnly]
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(GenreAndCategoryCreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AdminOrReadOnly]
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'

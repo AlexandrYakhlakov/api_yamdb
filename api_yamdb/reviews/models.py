@@ -52,6 +52,8 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ('-id',)
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'Пользователи'
 
 
 class Title(models.Model):
