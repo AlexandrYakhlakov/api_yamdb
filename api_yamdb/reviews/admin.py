@@ -6,11 +6,6 @@ from reviews.models import Category, Comment, Genre, Review, Title, User
 admin.site.empty_value_display = '-пока пусто-'
 
 
-# class ReviewInline(admin.TabularInline):
-#     """Выводим связанную модель в общем интерфейсе админки."""
-
-#     model = Review
-
 class GenreAndCategory(admin.ModelAdmin):
     """Заготовка для админок Жанры и Категории."""
 
@@ -48,6 +43,7 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = (
         'role',
     )
+
 
 @admin.register(Title)
 class TitleAdmin(admin.ModelAdmin):
