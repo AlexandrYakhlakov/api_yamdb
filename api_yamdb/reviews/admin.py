@@ -1,6 +1,27 @@
 from django.contrib import admin
 
-from reviews.models import User
+from reviews.models import Category, Comment, Genre, Review, Title, User
+
+# Глобально переопределяем в админке отображение NULL.
+admin.site.empty_value_display = '-пока пусто-'
+
+
+class GenreAndCategory(admin.ModelAdmin):
+    """Заготовка для админок Жанры и Категории."""
+
+    list_display = (
+        'name',
+        'slug',
+    )
+    list_display_links = (
+        'name',
+    )
+    search_fields = (
+        'name',
+    )
+    list_filter = (
+        'name',
+    )
 
 
 @admin.register(User)
@@ -55,6 +76,7 @@ class GenreAdmin(GenreAndCategory):
 @admin.register(Category)
 class CategoryAdmin(GenreAndCategory):
     """Переопределяем настройки интерфейса админки раздела категории."""
+
 
 
 @admin.register(Review)
