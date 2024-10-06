@@ -14,18 +14,18 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import AdminOrReadOnly, IsAdminRole, IsInModeratorGroup
+from api.permissions import AdminOrReadOnly, IsAdmin, IsInModeratorGroup
 from api.serializers import (
     AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
     ReviewSerializer, TitleSerializer, UserSerializer
 )
-from api.viewsets import GenreAndCategoryCreateListDestroyViewSet
+from api.viewsets import CreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated, IsAdminRole)
+    permission_classes = (permissions.IsAuthenticated, IsAdmin)
     serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
@@ -138,9 +138,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(
-            author=self.request.user, title=self.get_title()
-        )
+        try:
+            serializer.save(
+                author=self.request.user, title=self.get_title()
+            )
+        except IntegrityError:
+            raise serializers.ValidationError(
+                'Вы уже оставляли отзыв на это произведение.'
+            )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -178,13 +183,21 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
-class GenreViewSet(GenreAndCategoryCreateListDestroyViewSet):
+class GenreViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = [AdminOrReadOnly]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class CategoryViewSet(GenreAndCategoryCreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [AdminOrReadOnly]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
