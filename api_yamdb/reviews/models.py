@@ -10,23 +10,21 @@ from api.constants import (
 )
 from api.validators import validator_year_title
 
-MIN_SCORE = 1
-MAX_SCORE = 10
-Role = namedtuple('Role', ('role_value', 'widget_value'))
-admin = Role('admin', 'Администратор')
-moderator = Role('moderator', 'Модератор')
-auth_user = Role('user', 'Пользователь')
+Role = namedtuple('Role', ('role', 'widget'))
+ADMIN = Role('admin', 'Администратор')
+MODERATOR = Role('moderator', 'Модератор')
+AUTH_USER = Role('user', 'Пользователь')
 
 
 class User(AbstractUser):
     ROLE_CHOICES = (
-        (*admin,),
-        (*moderator,),
-        (*auth_user,)
+        (*ADMIN,),
+        (*MODERATOR,),
+        (*AUTH_USER,)
     )
     role = models.CharField(
         choices=ROLE_CHOICES,
-        default=auth_user.role_value,
+        default=AUTH_USER.role,
         max_length=50,
         verbose_name='Роль',
         blank=True
@@ -46,16 +44,14 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == admin.role_value
+        return self.role == ADMIN.role or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == moderator.role_value
+        return self.role == MODERATOR.role
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = 'пользователь'
-        verbose_name_plural = 'Пользователи'
 
 
 class Title(models.Model):
@@ -128,7 +124,6 @@ class Genre(models.Model):
         return self.name[:LEN_OF_SYMBL]
 
 
-
 class Category(models.Model):
     """Модель для Категорий произведений."""
 
@@ -156,49 +151,49 @@ class Category(models.Model):
         return self.name[:LEN_OF_SYMBL]
 
 
-class ContentBase(models.Model):
+class Review(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        verbose_name='Рейтинг произведения'
+    )
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='%(class)ss',
+        User, on_delete=models.CASCADE, related_name='reviews'
+    )
+    title = models.ForeignKey(
+        Title, on_delete=models.CASCADE, related_name='reviews'
     )
 
     def __str__(self):
         return self.text[:LEN_OF_SYMBL]
 
     class Meta:
-        abstract = True
-        ordering = ('-pub_date', )
-
-
-class Review(ContentBase):
-    score = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(MIN_SCORE),
-                    MaxValueValidator(MAX_SCORE)
-        ],
-        verbose_name='Рейтинг произведения'
-    )
-    title = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name='reviews'
-    )
-
-    class Meta(ContentBase.Meta):
+        ordering = ['-pub_date']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
             models.UniqueConstraint(
-                fields=['author', 'title'],
+                fields=('author', 'title'),
                 name='unique_author_title'
             ),
         )
 
 
-class Comment(ContentBase):
+class Comment(models.Model):
+    text = models.TextField()
+    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments'
+    )
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments'
     )
 
-    class Meta(ContentBase.Meta):
+    def __str__(self):
+        return self.text[:LEN_OF_SYMBL]
+
+    class Meta:
+        ordering = ['-pub_date']
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'

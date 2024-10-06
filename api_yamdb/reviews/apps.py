@@ -6,5 +6,3 @@ class ReviewsConfig(AppConfig):
     name = 'reviews'
     verbose_name = "Портал авторских произведений"
 
-    def ready(self):
-        import reviews.signals
