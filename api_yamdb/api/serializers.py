@@ -1,4 +1,5 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import (
@@ -55,6 +56,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault(),
         read_only=True
     )
+
+    def validate(self, data):
+        request = self.context['request']
+        title_id = self.context['view'].kwargs.get('title_id')
+        if request.method == 'POST':
+            if Review.objects.filter(
+                author=request.user,
+                title=get_object_or_404(
+                    Title,
+                    id=title_id
+                )
+            ).exists():
+                raise serializers.ValidationError(
+                    'Вы уже оставляли отзыв на это произведение.'
+                )
+        return data
 
     class Meta:
         model = Review
