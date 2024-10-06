@@ -10,21 +10,21 @@ from api.constants import (
 )
 from api.validators import validator_year_title
 
-Role = namedtuple('Role', ('role_value', 'widget_value'))
-admin = Role('admin', 'Администратор')
-moderator = Role('moderator', 'Модератор')
-auth_user = Role('user', 'Пользователь')
+Role = namedtuple('Role', ('role', 'widget'))
+ADMIN = Role('admin', 'Администратор')
+MODERATOR = Role('moderator', 'Модератор')
+AUTH_USER = Role('user', 'Пользователь')
 
 
 class User(AbstractUser):
     ROLE_CHOICES = (
-        (*admin,),
-        (*moderator,),
-        (*auth_user,)
+        (*ADMIN,),
+        (*MODERATOR,),
+        (*AUTH_USER,)
     )
     role = models.CharField(
         choices=ROLE_CHOICES,
-        default=auth_user.role_value,
+        default=AUTH_USER.role,
         max_length=50,
         verbose_name='Роль',
         blank=True
@@ -44,11 +44,11 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == admin.role_value
+        return self.role == ADMIN.role or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == moderator.role_value
+        return self.role == MODERATOR.role
 
     class Meta:
         ordering = ('-id',)

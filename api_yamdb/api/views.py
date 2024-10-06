@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import AdminOrReadOnly, IsAdminRole, IsInModeratorGroup
+from api.permissions import AdminOrReadOnly, IsAdmin, IsInModeratorGroup
 from api.serializers import (
     AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
@@ -25,7 +25,7 @@ from reviews.models import Category, Genre, Review, Title, User
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated, IsAdminRole)
+    permission_classes = (permissions.IsAuthenticated, IsAdmin)
     serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
