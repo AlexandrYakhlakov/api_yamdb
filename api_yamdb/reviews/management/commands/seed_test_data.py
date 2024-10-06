@@ -1,26 +1,26 @@
 import csv
 import os
 
-from django.apps import apps
 from django.conf import settings
 from django.core.management import BaseCommand
 from django.utils import timezone
 
 from reviews.models import (
-    Category, Comment, Genre, Review, Title, User
+    Category, Comment, Genre, Review, Title, User, TitleGenre
 )
 
 
 class Command(BaseCommand):
-    DIRECTORY = os.path.join(settings.BASE_DIR, 'static', 'data')
+    DIRECTORY = f'{settings.BASE_DIR}/static/data/'
     MODEL_FILE = {
         User: 'users.csv',
         Category: 'category.csv',
-        Title: 'titles.csv',
         Genre: 'genre.csv',
-        apps.get_model('reviews', 'title_genre'): 'genre_title.csv',
+        Title: 'titles.csv',
+        TitleGenre: 'genre_title.csv',
         Review: 'review.csv',
-        Comment: 'comments.csv'
+        Comment: 'comments.csv',
+
     }
 
     def handle(self, *args, **kwargs):
@@ -35,9 +35,7 @@ class Command(BaseCommand):
         )
         file_not_found = []
         for file_name in self.MODEL_FILE.values():
-            if not os.path.isfile(
-                    os.path.join(self.DIRECTORY, file_name)
-            ):
+            if not os.path.isfile(f'{self.DIRECTORY}{file_name}'):
                 file_not_found.append(file_name)
         if file_not_found:
             self.stdout.write(
@@ -58,9 +56,7 @@ class Command(BaseCommand):
             self.style.SUCCESS(f'{timezone.now()}. start: seed_test_data')
         )
         for model, file in self.MODEL_FILE.items():
-            with open(
-                    os.path.join(self.DIRECTORY, file), 'r', encoding='utf-8'
-            ) as csv_file:
+            with open(f'{self.DIRECTORY}{file}', 'r',) as csv_file:
                 try:
                     reader = csv.DictReader(csv_file, delimiter=',')
                     model.objects.bulk_create(
