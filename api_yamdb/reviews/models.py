@@ -191,15 +191,15 @@ class Review(ContentBase):
         Title, on_delete=models.CASCADE, related_name='reviews'
     )
 
-    class Meta:
+    class Meta(ContentBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
             models.UniqueConstraint(
-                fields=('author', 'title'),
+                fields=['author', 'title'],
                 name='unique_author_title'
             ),
-        ) # ПРОВЕРКА НА УНИКАЛЬНОСТЬ НЕ РАБОТАЕТ
+        )
 
 
 class Comment(ContentBase):
@@ -207,6 +207,6 @@ class Comment(ContentBase):
         Review, on_delete=models.CASCADE, related_name='comments'
     )
 
-    class Meta:
+    class Meta(ContentBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
