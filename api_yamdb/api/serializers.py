@@ -5,16 +5,10 @@ from rest_framework import serializers
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
 )
+from reviews.validators import validate_username
 
 
-class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.CharField(
-        max_length=150,
-        required=True,
-        validators=(UnicodeUsernameValidator(),)
-    )
-
+class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -22,32 +16,34 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-class AuthUserInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
-        )
+class UserSerializer(BaseUserSerializer):
+    ...
+
+
+class AuthUserInfoSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
         read_only_fields = ('role',)
 
 
 class AuthSignupSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.CharField(
-        max_length=150,
-        required=True,
-        validators=(UnicodeUsernameValidator(),)
+    email = serializers.EmailField(
+        max_length=User.EMAIL_LENGTH,
+        required=True
     )
-
-    def validate_username(self, username):
-        if username == 'me':
-            raise serializers.ValidationError('Недопустимое имя для логина')
-        return username
+    username = serializers.CharField(
+        max_length=User.USERNAME_LENGTH,
+        required=True,
+        validators=(validate_username,)
+    )
 
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(required=True)
-    username = serializers.CharField(required=True)
+    username = serializers.CharField(
+        max_length=User.USERNAME_LENGTH,
+        required=True,
+        validators=(validate_username,)
+    )
 
 
 class ReviewSerializer(serializers.ModelSerializer):

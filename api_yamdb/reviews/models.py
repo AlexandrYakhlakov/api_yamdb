@@ -8,10 +8,11 @@ from api.constants import (
     LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION,
     MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
-from api.validators import validator_year_title
+from reviews.validators import validate_username, validate_year
 
 MIN_SCORE = 1
 MAX_SCORE = 10
+
 Role = namedtuple('Role', ('role', 'widget'))
 ADMIN = Role('admin', 'Администратор')
 MODERATOR = Role('moderator', 'Модератор')
@@ -19,6 +20,8 @@ AUTH_USER = Role('user', 'Пользователь')
 
 
 class User(AbstractUser):
+    USERNAME_LENGTH = 150
+    EMAIL_LENGTH = 254
     ROLE_CHOICES = (
         (*ADMIN,),
         (*MODERATOR,),
@@ -42,7 +45,18 @@ class User(AbstractUser):
         default=None,
         max_length=36,
     )
-    email = models.EmailField(blank=False, unique=True)
+
+    email = models.EmailField(
+        max_length=EMAIL_LENGTH,
+        blank=False,
+        unique=True
+    )
+
+    username = models.CharField(
+        max_length=USERNAME_LENGTH,
+        unique=True,
+        validators=(validate_username,)
+    )
 
     @property
     def is_admin(self):
@@ -88,7 +102,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=[validator_year_title],
+        validators=[validate_year],
         verbose_name='Год произведения',
     )
 
