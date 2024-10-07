@@ -21,6 +21,7 @@ router_v1.register(
     CommentViewSet, basename='comments'
 )
 
+
 auth_url = [
     path('auth/signup/', auth_signup, name='auth_signup'),
     path('auth/token/', get_token, name='get_token')
