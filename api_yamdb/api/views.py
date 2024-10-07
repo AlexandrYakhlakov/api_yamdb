@@ -4,13 +4,13 @@ from django.core.mail import send_mail
 from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
-    filters, permissions, status, serializers, viewsets
+    filters, permissions, status, viewsets
 )
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
@@ -33,20 +33,6 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ('username',)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    def perform_create(self, serializer):
-        username_exists = User.objects.filter(
-            username=serializer.validated_data['username']
-        ).exists()
-        email_exists = User.objects.filter(
-            email=serializer.validated_data['email']
-        ).exists()
-
-        if username_exists or email_exists:
-            raise serializers.ValidationError((
-                dict(message='Пользователь с таким именем уже существует.'))
-            )
-        serializer.save()
-
     @action(
         methods=['PATCH', 'GET'],
         detail=False,
@@ -55,17 +41,18 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def auth_user_info(self, request):
         if request.method == 'GET':
-            serializer = AuthUserInfoSerializer(instance=request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        if request.method == 'PATCH':
-            serializer = AuthUserInfoSerializer(
-                instance=request.user,
-                data=request.data,
-                partial=True
+            return Response(
+                AuthUserInfoSerializer(instance=request.user).data,
+                status=status.HTTP_200_OK
             )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = AuthUserInfoSerializer(
+            instance=request.user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -75,18 +62,23 @@ def auth_signup(request):
     serializer.is_valid(raise_exception=True)
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-    except IntegrityError:
-        return Response(
-            dict(
-                message='Пользователь с таким логином или email уже существует'
-            ),
-            status=status.HTTP_400_BAD_REQUEST
+    except IntegrityError as e:
+        error_message = str(e)
+        if 'username' in error_message:
+            field = 'username'
+        elif 'email' in error_message:
+            field = 'email'
+        else:
+            field = 'unknown'
+        raise ValidationError(
+            {field: f'Пользователь с таким {field} уже существует.'}
         )
     user.confirmation_code = uuid.uuid4().hex
     user.save()
     send_mail(
-        subject='Код для входа',
-        message=f'Код для входа {user.confirmation_code}',
+        subject='Код подтверждения учетной записи',
+        message=f'Для подтверждения учетной записи введите код:'
+                f' {user.confirmation_code}',
         from_email='author@mail.ru',
         recipient_list=(user.email,),
         fail_silently=False
@@ -103,21 +95,26 @@ def get_token(request):
     data = request.data
     serializer = GetTokenSerializer(data=data)
     serializer.is_valid(raise_exception=True)
-    user = User.objects.filter(username=data['username'])
-    if not user.exists():
+    user = User.objects.filter(username=data['username']).first()
+    if not user:
         return Response(
             dict(message='Пользователь не найден'),
             status=status.HTTP_404_NOT_FOUND
         )
-    user = user.first()
-    if user.confirmation_code != data['confirmation_code']:
-        return Response(
-            dict(message='Некорректный код подтверждения'),
-            status=status.HTTP_400_BAD_REQUEST
+
+    if not user.confirmation_code:
+        raise ValidationError(
+            dict(message='Профиль уже был подтвержден')
         )
+    elif user.confirmation_code != data['confirmation_code']:
+        raise ValidationError(
+            dict(message='Некорректный код подтверждения')
+        )
+    else:
+        user.confirmation_code = None
+        user.save()
+
     token = RefreshToken.for_user(user).access_token
-    user.last_login = timezone.now()
-    user.save()
     return Response(
         dict(username=user.username, token=str(token)),
         status=status.HTTP_200_OK
