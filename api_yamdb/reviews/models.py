@@ -4,55 +4,72 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from api.constants import (
-    LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION,
-    MAX_LENGTH_NAME, MAX_LENGTH_SLUG
+from reviews.constants import (
+    LEN_OF_SYMBL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
-from api.validators import validator_year_title
+from reviews.validators import validate_username, validate_year
 
-Role = namedtuple('Role', ('role_value', 'widget_value'))
-admin = Role('admin', 'Администратор')
-moderator = Role('moderator', 'Модератор')
-auth_user = Role('user', 'Пользователь')
+MIN_SCORE = 1
+MAX_SCORE = 10
+
+Role = namedtuple('Role', ('role', 'widget'))
+ADMIN = Role('admin', 'Администратор')
+MODERATOR = Role('moderator', 'Модератор')
+AUTH_USER = Role('user', 'Пользователь')
 
 
 class User(AbstractUser):
+    USERNAME_LENGTH = 150
+    EMAIL_LENGTH = 254
+    CONFIRMATION_CODE_LENGTH = 5
+    ROLE_LENGTH = 9
+
     ROLE_CHOICES = (
-        (*admin,),
-        (*moderator,),
-        (*auth_user,)
+        (*ADMIN,),
+        (*MODERATOR,),
+        (*AUTH_USER,)
     )
     role = models.CharField(
         choices=ROLE_CHOICES,
-        default=auth_user.role_value,
-        max_length=50,
+        default=AUTH_USER.role,
+        max_length=ROLE_LENGTH,
         verbose_name='Роль',
         blank=True
     )
-    bio = models.CharField(
+    bio = models.TextField(
         blank=True,
-        max_length=500,
         verbose_name='Биография'
     )
     confirmation_code = models.CharField(
         blank=True,
         null=True,
         default=None,
-        max_length=36,
+        max_length=CONFIRMATION_CODE_LENGTH,
     )
-    email = models.EmailField(blank=False, unique=True)
+
+    email = models.EmailField(
+        max_length=EMAIL_LENGTH,
+        blank=False,
+        unique=True
+    )
+
+    username = models.CharField(
+        max_length=USERNAME_LENGTH,
+        unique=True,
+        validators=(validate_username,)
+    )
 
     @property
     def is_admin(self):
-        return self.role == admin.role_value
+        return self.role == ADMIN.role or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == moderator.role_value
+        return self.role == MODERATOR.role
 
     class Meta:
-        ordering = ('-id',)
-        verbose_name = 'пользователь'
+        ordering = ('-date_joined',)
+        verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
 
@@ -67,7 +84,6 @@ class Title(models.Model):
     description = models.TextField(
         blank=True,
         null=True,
-        max_length=MAX_LENGTH_DESCRIPTION,
         verbose_name='Описание произведения',
         help_text='Опишите вкратце ваше произведение'
     )
@@ -76,8 +92,7 @@ class Title(models.Model):
         blank=True,
         related_name='titles',
         verbose_name='Жанр',
-        help_text='К какому жанру относится произведение',
-        through='TitleGenre'
+        help_text='К какому жанру относится произведение'
     )
     category = models.ForeignKey(
         'Category',
@@ -89,7 +104,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=[validator_year_title],
+        validators=(validate_year,),
         verbose_name='Год произведения',
     )
 
@@ -102,109 +117,102 @@ class Title(models.Model):
         return self.name[:LEN_OF_SYMBL]
 
 
-class Genre(models.Model):
-    """Модель для Жанров произведений."""
+class CommonData(models.Model):
+    """Абстрактный класс."""
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
-        verbose_name='Жанр',
-        help_text='К какому жанру относится произведение'
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
         unique=True,
-        verbose_name='Слаг жанра',
         help_text=('Идентификатор страницы для URL; разрешены символы '
                    'латиницы, цифры, дефис и подчёркивание.'),
     )
 
     class Meta:
+        abstract = True
         ordering = ('name', )
-        verbose_name = 'Жанр',
-        verbose_name_plural = 'Жанры'
 
     def __str__(self) -> str:
         return self.name[:LEN_OF_SYMBL]
 
 
-class TitleGenre(models.Model):
-    title = models.ForeignKey('Title', on_delete=models.CASCADE)
-    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+class Genre(CommonData):
+    """Модель для Жанров произведений."""
 
-    class Meta:
-        db_table = "reviews_title_genre"
+    class Meta(CommonData.Meta):
+        verbose_name = 'Жанр',
+        verbose_name_plural = 'Жанры'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field_name = self._meta.get_field('name')
+        field_slug = self._meta.get_field('slug')
+        field_name.verbose_name = 'Жанр'
+        field_name.help_text = 'К какому жанру относится произведение'
+        field_slug.verbose_name = 'Слаг жанра'
 
 
-class Category(models.Model):
+class Category(CommonData):
     """Модель для Категорий произведений."""
 
-    name = models.CharField(
-        max_length=MAX_LENGTH_NAME,
-        verbose_name='Категория',
-        help_text='Название категории произведения',
-    )
-    slug = models.SlugField(
-        max_length=MAX_LENGTH_SLUG,
-        unique=True,
-        verbose_name='Слаг категории',
-        help_text=(
-            'Идентификатор страницы для URL; разрешены символы '
-            'латиницы, цифры, дефис и подчёркивание.'
-        ),
-    )
+    class Meta(CommonData.Meta):
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
 
-    class Meta:
-        ordering = ('name',)
-        verbose_name = "Категория"
-        verbose_name_plural = "Категории"
-
-    def __str__(self):
-        return self.name[:LEN_OF_SYMBL]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field_name = self._meta.get_field('name')
+        field_slug = self._meta.get_field('slug')
+        field_name.verbose_name = 'Категория'
+        field_name.help_text = 'Название категории произведения'
+        field_slug.verbose_name = 'Слаг категории'
 
 
-class Review(models.Model):
+class ContentBase(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
-    score = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(10)],
-        verbose_name='Рейтинг произведения'
-    )
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews'
+        User, on_delete=models.CASCADE,
+        related_name='%(class)ss',
+    )
+
+    def __str__(self):
+        return self.text[:LEN_OF_SYMBL]
+
+    class Meta:
+        abstract = True
+        ordering = ('-pub_date', )
+
+class Review(ContentBase):
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(MIN_SCORE),
+            MaxValueValidator(MAX_SCORE)
+        ],
+        verbose_name='Рейтинг произведения'
     )
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
     )
 
-    def __str__(self):
-        return self.text[:LEN_OF_SYMBL]
-
-    class Meta:
-        ordering = ['-pub_date']
+    class Meta(ContentBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
             models.UniqueConstraint(
-                fields=('author', 'title'),
+                fields=['author', 'title'],
                 name='unique_author_title'
             ),
         )
 
 
-class Comment(models.Model):
-    text = models.TextField()
-    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='comments'
-    )
+class Comment(ContentBase):
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments'
     )
 
-    def __str__(self):
-        return self.text[:LEN_OF_SYMBL]
-
-    class Meta:
-        ordering = ['-pub_date']
+    class Meta(ContentBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'

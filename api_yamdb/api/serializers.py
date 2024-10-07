@@ -1,19 +1,13 @@
-from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
 )
+from reviews.validators import validate_username
 
 
-class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.CharField(
-        max_length=150,
-        required=True,
-        validators=(UnicodeUsernameValidator(),)
-    )
-
+class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -21,32 +15,37 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-class AuthUserInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
-        )
+class UserSerializer(BaseUserSerializer):
+    ...
+
+
+class AuthUserInfoSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
         read_only_fields = ('role',)
 
 
 class AuthSignupSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.CharField(
-        max_length=150,
-        required=True,
-        validators=(UnicodeUsernameValidator(),)
+    email = serializers.EmailField(
+        max_length=User.EMAIL_LENGTH,
+        required=True
     )
-
-    def validate_username(self, username):
-        if username == 'me':
-            raise serializers.ValidationError('Недопустимое имя для логина')
-        return username
+    username = serializers.CharField(
+        max_length=User.USERNAME_LENGTH,
+        required=True,
+        validators=(validate_username,)
+    )
 
 
 class GetTokenSerializer(serializers.Serializer):
-    confirmation_code = serializers.CharField(required=True)
-    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(
+        max_length=User.CONFIRMATION_CODE_LENGTH,
+        required=True
+    )
+    username = serializers.CharField(
+        max_length=User.USERNAME_LENGTH,
+        required=True,
+        validators=(validate_username,)
+    )
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -55,6 +54,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault(),
         read_only=True
     )
+
+    def validate(self, data):
+        request = self.context['request']
+        title_id = self.context['view'].kwargs.get('title_id')
+        if request.method == 'POST':
+            if Review.objects.filter(
+                author=request.user,
+                title=get_object_or_404(
+                    Title,
+                    id=title_id
+                )
+            ).exists():
+                raise serializers.ValidationError(
+                    'Вы уже оставляли отзыв на это произведение.'
+                )
+        return data
 
     class Meta:
         model = Review
@@ -84,10 +99,6 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug',)
         model = Genre
 
-    def create(self, validated_data):
-        """Возвращаем экземпляр объекта сериализации."""
-        return Genre.objects.create(**validated_data)
-
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализации и десериализации данных, связанных с моделью Category."""
@@ -98,7 +109,10 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    """Сериализации и десериализации данных, связанных с моделью Title."""
+    """Сериализатор для получения списка или экземляра модели Title."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
     rating = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -108,18 +122,20 @@ class TitleSerializer(serializers.ModelSerializer):
         read_only_fields = ('genre', 'category',)
         model = Title
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.context['request'].method in ['PATCH', 'POST']:
-            self.fields['category'] = serializers.SlugRelatedField(
-                slug_field='slug',
-                queryset=Category.objects.all()
-            )
-            self.fields['genre'] = serializers.SlugRelatedField(
-                slug_field='slug',
-                queryset=Genre.objects.all(),
-                many=True
-            )
-        elif self.context['request'].method == 'GET':
-            self.fields['category'] = CategorySerializer()
-            self.fields['genre'] = GenreSerializer(many=True)
+
+class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор изменения или создания экземпляра модели Title."""
+
+    genre = serializers.SlugRelatedField(
+        many=True,
+        slug_field='slug',
+        queryset=Genre.objects.all()
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
+    )
+
+    class Meta:
+        model = Title
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category')

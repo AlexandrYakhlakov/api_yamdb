@@ -78,6 +78,7 @@ class CategoryAdmin(GenreAndCategory):
     """Переопределяем настройки интерфейса админки раздела категории."""
 
 
+
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     """Переопределяем настройки интерфейса админки раздела Отзывы."""
