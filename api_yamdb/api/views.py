@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError
 from django.db.models import Avg
@@ -79,7 +80,7 @@ def auth_signup(request):
         subject='Код подтверждения учетной записи',
         message=f'Для подтверждения учетной записи введите код:'
                 f' {user.confirmation_code}',
-        from_email='author@mail.ru',
+        from_email=settings.FROM_EMAIL,
         recipient_list=(user.email,),
         fail_silently=False
     )
