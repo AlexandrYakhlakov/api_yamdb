@@ -1,5 +1,3 @@
-import uuid
-
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError
@@ -15,18 +13,19 @@ from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import AdminOrReadOnly, IsAdmin, IsInModeratorGroup
+from api.permissions import AdminOrReadOnly, AdminOnly, AdminModerator
 from api.serializers import (
     AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
     ReviewSerializer, TitleSerializer, TitleCreateSerializer, UserSerializer
 )
+from api.utils import generate_confirmation_code
 from api.viewsets import GenreAndCategoryViewSet
 from reviews.models import Category, Genre, Review, Title, User
-
+from reviews.constants import USER_PROFILE_PATH
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated, IsAdmin)
+    permission_classes = (permissions.IsAuthenticated, AdminOnly)
     serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
@@ -37,7 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         methods=['PATCH', 'GET'],
         detail=False,
-        url_path='me',
+        url_path=USER_PROFILE_PATH,
         permission_classes=(permissions.IsAuthenticated,)
     )
     def auth_user_info(self, request):
@@ -65,16 +64,16 @@ def auth_signup(request):
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError as e:
         error_message = str(e)
+        field = 'unknown'
         if 'username' in error_message:
             field = 'username'
         elif 'email' in error_message:
             field = 'email'
-        else:
-            field = 'unknown'
+
         raise ValidationError(
             {field: f'Пользователь с таким {field} уже существует.'}
         )
-    user.confirmation_code = uuid.uuid4().hex
+    user.confirmation_code = generate_confirmation_code()
     user.save()
     send_mail(
         subject='Код подтверждения учетной записи',
@@ -96,13 +95,7 @@ def get_token(request):
     data = request.data
     serializer = GetTokenSerializer(data=data)
     serializer.is_valid(raise_exception=True)
-    user = User.objects.filter(username=data['username']).first()
-    if not user:
-        return Response(
-            dict(message='Пользователь не найден'),
-            status=status.HTTP_404_NOT_FOUND
-        )
-
+    user = get_object_or_404(User, username=data['username'])
     if not user.confirmation_code:
         raise ValidationError(
             dict(message='Профиль уже был подтвержден')
@@ -111,9 +104,8 @@ def get_token(request):
         raise ValidationError(
             dict(message='Некорректный код подтверждения')
         )
-    else:
-        user.confirmation_code = None
-        user.save()
+    user.confirmation_code = None
+    user.save()
 
     token = RefreshToken.for_user(user).access_token
     return Response(
@@ -125,7 +117,7 @@ def get_token(request):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, IsInModeratorGroup,
+        permissions.IsAuthenticatedOrReadOnly, AdminModerator,
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
@@ -145,7 +137,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [
         permissions.IsAuthenticatedOrReadOnly,
-        IsInModeratorGroup
+        AdminModerator
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
