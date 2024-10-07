@@ -185,6 +185,7 @@ class ContentBase(models.Model):
         abstract = True
         ordering = ('-pub_date', )
 
+
 class Review(ContentBase):
     score = models.PositiveSmallIntegerField(
         validators=[

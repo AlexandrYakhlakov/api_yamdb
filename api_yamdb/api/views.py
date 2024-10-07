@@ -24,6 +24,7 @@ from api.viewsets import GenreAndCategoryViewSet
 from reviews.models import Category, Genre, Review, Title, User
 from reviews.constants import USER_PROFILE_PATH
 
+
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, AdminOnly)
     serializer_class = UserSerializer
