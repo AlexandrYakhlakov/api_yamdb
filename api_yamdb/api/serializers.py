@@ -96,10 +96,6 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug',)
         model = Genre
 
-    def create(self, validated_data):
-        """Возвращаем экземпляр объекта сериализации."""
-        return Genre.objects.create(**validated_data)
-
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализации и десериализации данных, связанных с моделью Category."""
@@ -110,7 +106,10 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    """Сериализации и десериализации данных, связанных с моделью Title."""
+    """Сериализатор для получения списка или экземляра модели Title."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
     rating = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -120,18 +119,36 @@ class TitleSerializer(serializers.ModelSerializer):
         read_only_fields = ('genre', 'category',)
         model = Title
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.context['request'].method in ['PATCH', 'POST']:
-            self.fields['category'] = serializers.SlugRelatedField(
-                slug_field='slug',
-                queryset=Category.objects.all()
-            )
-            self.fields['genre'] = serializers.SlugRelatedField(
-                slug_field='slug',
-                queryset=Genre.objects.all(),
-                many=True
-            )
-        elif self.context['request'].method == 'GET':
-            self.fields['category'] = CategorySerializer()
-            self.fields['genre'] = GenreSerializer(many=True)
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     if self.context['request'].method in ['PATCH', 'POST']:
+    #         self.fields['category'] = serializers.SlugRelatedField(
+    #             slug_field='slug',
+    #             queryset=Category.objects.all()
+    #         )
+    #         self.fields['genre'] = serializers.SlugRelatedField(
+    #             slug_field='slug',
+    #             queryset=Genre.objects.all(),
+    #             many=True
+    #         )
+    #     elif self.context['request'].method == 'GET':
+    #         self.fields['category'] = CategorySerializer()
+    #         self.fields['genre'] = GenreSerializer(many=True)
+
+
+class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор изменения или создания экземпляра модели Title."""
+
+    genre = serializers.SlugRelatedField(
+        many=True,
+        slug_field='slug',
+        queryset=Genre.objects.all()
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
+    )
+
+    class Meta:
+        model = Title
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category')

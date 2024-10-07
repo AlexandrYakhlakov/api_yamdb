@@ -3,16 +3,17 @@ from rest_framework import filters, mixins, viewsets
 from api.permissions import AdminOrReadOnly
 
 
-class GenreAndCategoryCreateListDestroyViewSet(
+class CreateListDestroyViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
-    """Cоздаём, просматриваем, удаляем.
+    """Cоздаём, просматриваем, удаляем."""
 
-    Применяем к Жанрам и Категориям.
-    """
+
+class GenreAndCategoryViewSet(CreateListDestroyViewSet):
+    """Наследованный класс применяем к Жанрам и Категориям проекта."""
 
     permission_classes = [AdminOrReadOnly]
     filter_backends = (filters.SearchFilter,)
