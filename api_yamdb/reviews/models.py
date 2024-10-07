@@ -22,6 +22,7 @@ class User(AbstractUser):
     USERNAME_LENGTH = 150
     EMAIL_LENGTH = 254
     CONFIRMATION_CODE_LENGTH = 5
+    ROLE_LENGTH = 9
 
     ROLE_CHOICES = (
         (*ADMIN,),
@@ -31,13 +32,12 @@ class User(AbstractUser):
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=AUTH_USER.role,
-        max_length=50,
+        max_length=ROLE_LENGTH,
         verbose_name='Роль',
         blank=True
     )
-    bio = models.CharField(
+    bio = models.TextField(
         blank=True,
-        max_length=500,
         verbose_name='Биография'
     )
     confirmation_code = models.CharField(
@@ -68,7 +68,7 @@ class User(AbstractUser):
         return self.role == MODERATOR.role
 
     class Meta:
-        ordering = ('-id',)
+        ordering = ('-date_joined',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

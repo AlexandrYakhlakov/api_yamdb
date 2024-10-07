@@ -22,7 +22,7 @@ from api.serializers import (
 from api.utils import generate_confirmation_code
 from api.viewsets import GenreAndCategoryViewSet
 from reviews.models import Category, Genre, Review, Title, User
-
+from reviews.constants import USER_PROFILE_PATH
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdmin)
@@ -36,7 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         methods=['PATCH', 'GET'],
         detail=False,
-        url_path='me',
+        url_path=USER_PROFILE_PATH,
         permission_classes=(permissions.IsAuthenticated,)
     )
     def auth_user_info(self, request):
