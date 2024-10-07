@@ -4,7 +4,7 @@ import re
 from django.core.exceptions import ValidationError
 
 
-def validator_year(value):
+def validate_year(value):
     """Валидатор проверки года выпуска произведения."""
     if value > date.today().year:
         raise ValidationError(
@@ -15,8 +15,12 @@ def validator_year(value):
 
 def validate_username(value):
     if value == 'me':
-        raise ValidationError('Недопустимое имя')
-    if not re.match('[a-zA-Z0-9_]+$', value):
+        raise ValidationError('Логин не может принимать значение "me"')
+    if not re.match('^[\w.@+-]+\Z', value):
         raise ValidationError(
-            'Имя содержит недопустимые символы'
+            (
+                'Некорректный логин. Логин может содержать только символы из'
+                ' набора: латинские буквы, цифры, знак подчёркивания, точка,'
+                ' @, +, пробел.'
+            )
         )
