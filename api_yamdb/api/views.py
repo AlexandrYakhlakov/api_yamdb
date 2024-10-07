@@ -18,9 +18,9 @@ from api.permissions import AdminOrReadOnly, IsAdmin, IsInModeratorGroup
 from api.serializers import (
     AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
-    ReviewSerializer, TitleSerializer, UserSerializer
+    ReviewSerializer, TitleSerializer, TitleCreateSerializer, UserSerializer
 )
-from api.viewsets import GenreAndCategoryCreateListDestroyViewSet
+from api.viewsets import GenreAndCategoryViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 
@@ -167,23 +167,29 @@ class TitleViewSet(viewsets.ModelViewSet):
     -в поле serializer_class - указываем, какой сериализатор будет применён
     для валидации и сериализации;
     """
+
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
-    ).order_by('-rating')
+    ).order_by('name')
     serializer_class = TitleSerializer
     permission_classes = [AdminOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleSerializer
+        return TitleCreateSerializer
 
-class GenreViewSet(GenreAndCategoryCreateListDestroyViewSet):
+
+class GenreViewSet(GenreAndCategoryViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(GenreAndCategoryCreateListDestroyViewSet):
+class CategoryViewSet(GenreAndCategoryViewSet):
     """Класс для выполнения операций с моделью Genre."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
