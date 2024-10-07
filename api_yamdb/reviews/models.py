@@ -21,6 +21,8 @@ AUTH_USER = Role('user', 'Пользователь')
 class User(AbstractUser):
     USERNAME_LENGTH = 150
     EMAIL_LENGTH = 254
+    CONFIRMATION_CODE_LENGTH = 5
+
     ROLE_CHOICES = (
         (*ADMIN,),
         (*MODERATOR,),
@@ -42,7 +44,7 @@ class User(AbstractUser):
         blank=True,
         null=True,
         default=None,
-        max_length=36,
+        max_length=CONFIRMATION_CODE_LENGTH,
     )
 
     email = models.EmailField(

@@ -37,7 +37,10 @@ class AuthSignupSerializer(serializers.Serializer):
 
 
 class GetTokenSerializer(serializers.Serializer):
-    confirmation_code = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(
+        max_length=User.CONFIRMATION_CODE_LENGTH,
+        required=True
+    )
     username = serializers.CharField(
         max_length=User.USERNAME_LENGTH,
         required=True,
@@ -118,22 +121,6 @@ class TitleSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('genre', 'category',)
         model = Title
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     if self.context['request'].method in ['PATCH', 'POST']:
-    #         self.fields['category'] = serializers.SlugRelatedField(
-    #             slug_field='slug',
-    #             queryset=Category.objects.all()
-    #         )
-    #         self.fields['genre'] = serializers.SlugRelatedField(
-    #             slug_field='slug',
-    #             queryset=Genre.objects.all(),
-    #             many=True
-    #         )
-    #     elif self.context['request'].method == 'GET':
-    #         self.fields['category'] = CategorySerializer()
-    #         self.fields['genre'] = GenreSerializer(many=True)
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
