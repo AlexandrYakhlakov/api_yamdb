@@ -43,7 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def auth_user_info(self, request):
         if request.method == 'GET':
             return Response(
-                AuthUserInfoSerializer(instance=request.user).data,
+                UserSerializer(instance=request.user).data,
                 status=status.HTTP_200_OK
             )
         serializer = AuthUserInfoSerializer(
