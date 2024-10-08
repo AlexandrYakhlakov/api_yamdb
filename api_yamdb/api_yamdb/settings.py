@@ -130,3 +130,5 @@ SIMPLE_JWT = {
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 FROM_EMAIL = 'author@mail.ru'
+
+CONFORMATION_CODE_CHARACTER_SET = '0123456789'
