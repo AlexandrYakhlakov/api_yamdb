@@ -22,7 +22,7 @@ from api.serializers import (
 from api.utils import generate_confirmation_code
 from api.viewsets import GenreAndCategoryViewSet
 from reviews.models import Category, Genre, Review, Title, User
-from reviews.constants import USER_PROFILE_PATH
+from reviews.constants import USER_PROFILE_PATH, USED_CODE_VALUE
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -64,16 +64,7 @@ def auth_signup(request):
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError as e:
-        error_message = str(e)
-        field = 'unknown'
-        if 'username' in error_message:
-            field = 'username'
-        elif 'email' in error_message:
-            field = 'email'
-
-        raise ValidationError(
-            {field: f'Пользователь с таким {field} уже существует.'}
-        )
+        UserSerializer(data=request.data).is_valid(raise_exception=True)
     user.confirmation_code = generate_confirmation_code()
     user.save()
     send_mail(
@@ -97,7 +88,7 @@ def get_token(request):
     serializer = GetTokenSerializer(data=data)
     serializer.is_valid(raise_exception=True)
     user = get_object_or_404(User, username=data['username'])
-    if not user.confirmation_code:
+    if user.confirmation_code == USED_CODE_VALUE:
         raise ValidationError(
             dict(message='Профиль уже был подтвержден')
         )
@@ -105,7 +96,7 @@ def get_token(request):
         raise ValidationError(
             dict(message='Некорректный код подтверждения')
         )
-    user.confirmation_code = None
+    user.confirmation_code = USED_CODE_VALUE
     user.save()
 
     token = RefreshToken.for_user(user).access_token
