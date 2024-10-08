@@ -57,14 +57,18 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN.role or self.is_superuser
+        return (
+                self.role == ADMIN.role
+                or self.is_superuser
+                or self.is_staff
+        )
 
     @property
     def is_moderator(self):
         return self.role == MODERATOR.role
 
     class Meta:
-        ordering = ('-date_joined',)
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
