@@ -10,24 +10,23 @@ from reviews.models import (
 from reviews.validators import validate_username
 
 
-class BaseUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
+    def validate_username(self, username):
+        return validate_username(username)
 
-class UserSerializer(BaseUserSerializer):
-    ...
 
-
-class AuthUserInfoSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
+class AuthUserInfoSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
 
 
-class AuthSignupSerializer(serializers.Serializer):
+class SignupSerializer(serializers.Serializer):
     email = serializers.EmailField(
         max_length=EMAIL_LENGTH,
         required=True

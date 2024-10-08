@@ -15,7 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from api.filters import TitleFilter
 from api.permissions import AdminOrReadOnly, AdminOnly, AdminModerator
 from api.serializers import (
-    AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
+    SignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
     ReviewSerializer, TitleSerializer, TitleCreateSerializer, UserSerializer
 )
@@ -59,7 +59,7 @@ class UserViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def auth_signup(request):
-    serializer = AuthSignupSerializer(data=request.data)
+    serializer = SignupSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
