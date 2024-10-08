@@ -1,10 +1,10 @@
 import random
 
-from reviews.models import User
+from reviews.constants import CONFIRMATION_CODE_LENGTH
 
 
 def generate_confirmation_code(
-        code_length=User.CONFIRMATION_CODE_LENGTH
+        code_length=CONFIRMATION_CODE_LENGTH
 ):
     return random.randint(
         10 ** (code_length - 1),
