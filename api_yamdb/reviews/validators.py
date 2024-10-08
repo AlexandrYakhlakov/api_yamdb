@@ -20,12 +20,15 @@ def validate_username(username):
         raise ValidationError(
             f'Логин не может принимать значение "{USER_PROFILE_PATH}"'
         )
-    if not re.match(r'^[\w.@+-]+\Z', username):
+    username_pattern = r'^[\w.@+-]+\Z'
+    if not re.match(username_pattern, username):
+        invalid_chars = ''.join(
+            [char for char in username if not re.match(username_pattern, char)]
+        )
         raise ValidationError(
             (
-                'Некорректный логин. Логин может содержать только символы из'
-                ' набора: латинские буквы, цифры, знак подчёркивания, точка,'
-                ' @, +, пробел.'
+                'Некорректный логин. Логин не должен содержать символы:'
+                f'{invalid_chars} .'
             )
         )
     return username
