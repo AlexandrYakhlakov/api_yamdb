@@ -110,7 +110,21 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
 
 
-class TitleCreateUpdateSerializer(serializers.ModelSerializer):
+class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения списка или экземляра модели Title."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+        )
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
     """Сериализатор изменения или создания экземпляра модели Title."""
 
     genre = serializers.SlugRelatedField(
@@ -122,21 +136,10 @@ class TitleCreateUpdateSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Category.objects.all()
     )
-    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
-        fields = (
-            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
-        )
+        fields = ('name', 'year', 'description', 'genre', 'category')
 
-
-class TitleSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения списка или экземляра модели Title."""
-
-    category = CategorySerializer()
-    genre = GenreSerializer(many=True)
-    rating = serializers.IntegerField()
-
-    class Meta(TitleCreateUpdateSerializer.Meta):
-        read_only_fields = ('__all__',)
+    def to_representation(self, instance):
+        return TitleSerializer(instance).data
