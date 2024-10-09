@@ -26,7 +26,7 @@ class User(AbstractUser):
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=AUTH_USER.role,
-        max_length=max(len(role[0]) for role in ROLE_CHOICES),
+        max_length=max(len(role) for role, _ in ROLE_CHOICES),
         verbose_name='Роль',
         blank=True
     )
@@ -57,7 +57,6 @@ class User(AbstractUser):
     def is_admin(self):
         return (
             self.role == ADMIN.role
-            or self.is_superuser
             or self.is_staff
         )
 
