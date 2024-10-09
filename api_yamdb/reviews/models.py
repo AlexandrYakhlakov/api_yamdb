@@ -6,10 +6,9 @@ from django.db import models
 
 from reviews.constants import (
     CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH, LEN_OF_SYMBL,
-    MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH
+    MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
 )
 from reviews.validators import validate_username, validate_year_title
-from . constants import MIN_SCORE, MAX_SCORE
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -166,7 +165,7 @@ Category._meta.get_field('name').help_text = (
 )
 
 
-class ReviewCommentBase(models.Model):
+class UserPublicationBase(models.Model):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
@@ -184,7 +183,7 @@ class ReviewCommentBase(models.Model):
         default_related_name = '%(class)ss'
 
 
-class Review(ReviewCommentBase):
+class Review(UserPublicationBase):
     score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(MIN_SCORE),
@@ -195,11 +194,10 @@ class Review(ReviewCommentBase):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews',
         verbose_name='Произведение'
     )
 
-    class Meta(ReviewCommentBase.Meta):
+    class Meta(UserPublicationBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -210,14 +208,13 @@ class Review(ReviewCommentBase):
         )
 
 
-class Comment(ReviewCommentBase):
+class Comment(UserPublicationBase):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        related_name='comments',
         verbose_name='Отзыв'
     )
 
-    class Meta(ReviewCommentBase.Meta):
+    class Meta(UserPublicationBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
