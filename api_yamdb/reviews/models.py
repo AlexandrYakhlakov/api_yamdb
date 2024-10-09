@@ -8,9 +8,8 @@ from reviews.constants import (
     LEN_OF_SYMBL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
 from reviews.validators import validate_username, validate_year
+from . constants import MIN_SCORE, MAX_SCORE
 
-MIN_SCORE = 1
-MAX_SCORE = 10
 
 Role = namedtuple('Role', ('role', 'widget'))
 ADMIN = Role('admin', 'Администратор')
@@ -170,12 +169,13 @@ class Category(CommonData):
         field_slug.verbose_name = 'Слаг категории'
 
 
-class ContentBase(models.Model):
-    text = models.TextField()
+class ReviewCommentBase(models.Model):
+    text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='%(class)ss',
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор'
     )
 
     def __str__(self):
@@ -184,21 +184,25 @@ class ContentBase(models.Model):
     class Meta:
         abstract = True
         ordering = ('-pub_date', )
+        default_related_name = '%(class)ss'
 
 
-class Review(ContentBase):
+class Review(ReviewCommentBase):
     score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(MIN_SCORE),
             MaxValueValidator(MAX_SCORE)
         ],
-        verbose_name='Рейтинг произведения'
+        verbose_name='Оценка'
     )
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name='reviews'
+        Title,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Произведение'
     )
 
-    class Meta(ContentBase.Meta):
+    class Meta(ReviewCommentBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -209,11 +213,14 @@ class Review(ContentBase):
         )
 
 
-class Comment(ContentBase):
+class Comment(ReviewCommentBase):
     review = models.ForeignKey(
-        Review, on_delete=models.CASCADE, related_name='comments'
+        Review,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Отзыв'
     )
 
-    class Meta(ContentBase.Meta):
+    class Meta(ReviewCommentBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
