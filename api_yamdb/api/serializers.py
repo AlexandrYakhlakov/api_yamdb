@@ -59,18 +59,18 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context['request']
-        title_id = self.context['view'].kwargs.get('title_id')
-        if request.method == 'POST':
-            if Review.objects.filter(
-                author=request.user,
-                title=get_object_or_404(
-                    Title,
-                    id=title_id
-                )
-            ).exists():
-                raise serializers.ValidationError(
-                    'Вы уже оставляли отзыв на это произведение.'
-                )
+        if request.method != 'POST':
+            return data
+        if Review.objects.filter(
+            author=request.user,
+            title=get_object_or_404(
+                Title,
+                id=self.context['view'].kwargs['title_id']
+            )
+        ).exists():
+            raise serializers.ValidationError(
+                'Вы уже оставляли отзыв на это произведение.'
+            )
         return data
 
     class Meta:
@@ -110,22 +110,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения списка или экземляра модели Title."""
-
-    category = CategorySerializer()
-    genre = GenreSerializer(many=True)
-    rating = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        fields = (
-            'id', 'name', 'year', 'description', 'genre', 'category', 'rating'
-        )
-        read_only_fields = ('genre', 'category',)
-        model = Title
-
-
-class TitleCreateSerializer(serializers.ModelSerializer):
+class TitleCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор изменения или создания экземпляра модели Title."""
 
     genre = serializers.SlugRelatedField(
@@ -137,7 +122,21 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Category.objects.all()
     )
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+        )
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения списка или экземляра модели Title."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = serializers.IntegerField()
+
+    class Meta(TitleCreateUpdateSerializer.Meta):
+        read_only_fields = ('__all__',)

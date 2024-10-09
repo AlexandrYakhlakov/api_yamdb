@@ -6,11 +6,13 @@ from django.core.exceptions import ValidationError
 from reviews.constants import USER_PROFILE_PATH
 
 
-def validate_year(value):
+def validate_year_title(value):
     """Валидатор проверки года выпуска произведения."""
-    if value > date.today().year:
+    current_year = date.today().year
+    if value > current_year:
         raise ValidationError(
-            'Год выпуска не должен быть больше текущего года.'
+            f'Год выпуска произведения ({value}) не должен '
+            f'быть больше текущего года ({current_year}).'
         )
     return value
 
@@ -26,7 +28,7 @@ def validate_username(username):
             [char for char in username if not re.match(username_pattern, char)]
         )
         raise ValidationError(
-                'Некорректный логин. Логин не должен содержать символы:'
-                f'{invalid_chars} .'
+            'Некорректный логин. Логин не должен содержать символы:'
+            f'{invalid_chars} .'
         )
     return username
