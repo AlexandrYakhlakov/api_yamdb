@@ -7,8 +7,9 @@ from django.db import models
 from reviews.constants import (
     LEN_OF_SYMBL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
-from reviews.validators import validate_username, validate_year
+from reviews.validators import validate_username, validate_year_title
 from . constants import MIN_SCORE, MAX_SCORE
+
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -77,13 +78,13 @@ class Title(models.Model):
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
-        verbose_name='Произведение',
+        verbose_name='Название',
         help_text='Название произведения',
     )
     description = models.TextField(
         blank=True,
         null=True,
-        verbose_name='Описание произведения',
+        verbose_name='Описание',
         help_text='Опишите вкратце ваше произведение'
     )
     genre = models.ManyToManyField(
@@ -103,7 +104,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=(validate_year,),
+        validators=(validate_year_title,),
         verbose_name='Год произведения',
     )
 
@@ -113,10 +114,10 @@ class Title(models.Model):
         verbose_name_plural = 'Произведения'
 
     def __str__(self):
-        return self.name[:LEN_OF_SYMBL]
+        return f'{self.name[:LEN_OF_SYMBL]}, {self.category}, {self.year}'
 
 
-class CommonData(models.Model):
+class NameAndSlugAbstract(models.Model):
     """Абстрактный класс."""
 
     name = models.CharField(
@@ -125,6 +126,7 @@ class CommonData(models.Model):
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
         unique=True,
+        verbose_name='Слаг',
         help_text=('Идентификатор страницы для URL; разрешены символы '
                    'латиницы, цифры, дефис и подчёркивание.'),
     )
@@ -137,36 +139,32 @@ class CommonData(models.Model):
         return self.name[:LEN_OF_SYMBL]
 
 
-class Genre(CommonData):
+class Genre(NameAndSlugAbstract):
     """Модель для Жанров произведений."""
 
-    class Meta(CommonData.Meta):
+    class Meta(NameAndSlugAbstract.Meta):
         verbose_name = 'Жанр',
         verbose_name_plural = 'Жанры'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        field_name = self._meta.get_field('name')
-        field_slug = self._meta.get_field('slug')
-        field_name.verbose_name = 'Жанр'
-        field_name.help_text = 'К какому жанру относится произведение'
-        field_slug.verbose_name = 'Слаг жанра'
+
+Genre._meta.get_field('name').verbose_name = 'Жанр'
+Genre._meta.get_field('name').help_text = (
+    'К какому жанру относится произведение'
+)
 
 
-class Category(CommonData):
+class Category(NameAndSlugAbstract):
     """Модель для Категорий произведений."""
 
-    class Meta(CommonData.Meta):
+    class Meta(NameAndSlugAbstract.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        field_name = self._meta.get_field('name')
-        field_slug = self._meta.get_field('slug')
-        field_name.verbose_name = 'Категория'
-        field_name.help_text = 'Название категории произведения'
-        field_slug.verbose_name = 'Слаг категории'
+
+Category._meta.get_field('name').verbose_name = 'Категория'
+Category._meta.get_field('name').help_text = (
+    'К какой категории относится произведение'
+)
 
 
 class ReviewCommentBase(models.Model):

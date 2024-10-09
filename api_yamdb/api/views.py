@@ -17,10 +17,11 @@ from api.permissions import AdminOrReadOnly, AdminOnly, AdminModerator
 from api.serializers import (
     AuthSignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
-    ReviewSerializer, TitleSerializer, TitleCreateSerializer, UserSerializer
+    ReviewSerializer, TitleSerializer, TitleCreateUpdateSerializer,
+    UserSerializer,
 )
 from api.utils import generate_confirmation_code
-from api.viewsets import GenreAndCategoryViewSet
+from api.viewsets import CreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
 from reviews.constants import USER_PROFILE_PATH
 
@@ -162,7 +163,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
-    ).order_by('name')
+    ).order_by(*Title._meta.ordering)
     serializer_class = TitleSerializer
     permission_classes = [AdminOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
@@ -172,16 +173,18 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return TitleSerializer
-        return TitleCreateSerializer
+        return TitleCreateUpdateSerializer
 
 
-class GenreViewSet(GenreAndCategoryViewSet):
+class GenreViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(GenreAndCategoryViewSet):
+class CategoryViewSet(CreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

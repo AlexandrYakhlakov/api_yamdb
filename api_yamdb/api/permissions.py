@@ -26,8 +26,10 @@ class AdminModerator(AdminOnly):
 
 class AdminOrReadOnly(AdminOnly):
     """Проверяем пользователя.
+
     Если пользовтель не админ - предоставляем только чтение.
     """
+
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS

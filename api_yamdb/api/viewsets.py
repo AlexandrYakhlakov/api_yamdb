@@ -11,10 +11,6 @@ class CreateListDestroyViewSet(
 ):
     """Cоздаём, просматриваем, удаляем."""
 
-
-class GenreAndCategoryViewSet(CreateListDestroyViewSet):
-    """Наследованный класс применяем к Жанрам и Категориям проекта."""
-
     permission_classes = [AdminOrReadOnly]
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
