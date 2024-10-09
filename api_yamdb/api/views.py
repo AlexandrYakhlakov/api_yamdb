@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
@@ -66,9 +66,23 @@ def auth_signup(request):
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
-        UserSerializer(data=request.data).is_valid(raise_exception=True)
+        error_message = 'Пользователь с таким {} уже существует.'
+
+        username = serializer.validated_data['username']
+        email = serializer.validated_data['email']
+
+        duplicate_username, duplicate_email = User.objects.filter(
+            Q(username=username) | Q(email=email)
+        ).values_list('username', 'email').first()
+
+        raise ValidationError(
+            dict(username=error_message.format('username'))
+            if username == duplicate_username
+            else dict(email=error_message.format('email'))
+        )
+
     user.confirmation_code = generate_confirmation_code()
-    user.save()
+    user.save(update_fields=['confirmation_code'])
     send_mail(
         subject='Код подтверждения учетной записи',
         message=f'Для подтверждения учетной записи введите код:'
@@ -86,20 +100,22 @@ def auth_signup(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def get_token(request):
-    data = request.data
-    serializer = GetTokenSerializer(data=data)
+    serializer = GetTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = get_object_or_404(User, username=data['username'])
+    validated_data = serializer.validated_data
+    username = validated_data['username']
+    confirmation_code = validated_data['confirmation_code']
+    user = get_object_or_404(User, username=username)
     if user.confirmation_code == settings.USED_CODE_VALUE:
         raise ValidationError(
-            dict(message='Профиль уже был подтвержден')
+            dict(message='Код подтверждения уже был использован.')
         )
-    elif user.confirmation_code != data['confirmation_code']:
+    elif user.confirmation_code != confirmation_code:
         raise ValidationError(
             dict(message='Некорректный код подтверждения')
         )
-    user.confirmation_code = settings.USED_CODE_VALUE
-    user.save()
+    user.confirmation_code = generate_confirmation_code(is_use_code=True)
+    user.save(update_fields=['confirmation_code'])
 
     token = RefreshToken.for_user(user).access_token
     return Response(
