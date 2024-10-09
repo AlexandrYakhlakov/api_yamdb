@@ -28,7 +28,7 @@ def validate_username(username):
             [char for char in username if not re.match(username_pattern, char)]
         )
         raise ValidationError(
-                'Некорректный логин. Логин не должен содержать символы:'
-                f'{invalid_chars} .'
+            'Некорректный логин. Логин не должен содержать символы:'
+            f'{invalid_chars} .'
         )
     return username

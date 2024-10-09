@@ -5,12 +5,11 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from reviews.constants import (
-    CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH,LEN_OF_SYMBL,
+    CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH, LEN_OF_SYMBL,
     MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH
 )
 from reviews.validators import validate_username, validate_year_title
 from . constants import MIN_SCORE, MAX_SCORE
-
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -58,9 +57,9 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return (
-                self.role == ADMIN.role
-                or self.is_superuser
-                or self.is_staff
+            self.role == ADMIN.role
+            or self.is_superuser
+            or self.is_staff
         )
 
     @property

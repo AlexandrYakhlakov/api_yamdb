@@ -13,7 +13,9 @@ from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import AdminOrReadOnly, AdminOnly, AdminOrModeratorOrOwnerOrReadOnly
+from api.permissions import (
+    AdminOrReadOnly, AdminOnly, AdminOrModeratorOrOwnerOrReadOnly
+)
 from api.serializers import (
     SignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
@@ -64,7 +66,7 @@ def auth_signup(request):
     serializer.is_valid(raise_exception=True)
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-    except IntegrityError as e:
+    except IntegrityError:
         UserSerializer(data=request.data).is_valid(raise_exception=True)
     user.confirmation_code = generate_confirmation_code()
     user.save()
@@ -110,7 +112,8 @@ def get_token(request):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, AdminOrModeratorOrOwnerOrReadOnly,
+        permissions.IsAuthenticatedOrReadOnly,
+        AdminOrModeratorOrOwnerOrReadOnly,
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
