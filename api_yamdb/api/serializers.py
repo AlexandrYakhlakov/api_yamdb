@@ -1,36 +1,38 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
+from reviews.constants import (
+    EMAIL_LENGTH, CONFIRMATION_CODE_LENGTH, USERNAME_LENGTH
+)
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
 )
 from reviews.validators import validate_username
 
 
-class BaseUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
+    def validate_username(self, username):
+        return validate_username(username)
 
-class UserSerializer(BaseUserSerializer):
-    ...
 
-
-class AuthUserInfoSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
+class AuthUserInfoSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
 
 
-class AuthSignupSerializer(serializers.Serializer):
+class SignupSerializer(serializers.Serializer):
     email = serializers.EmailField(
-        max_length=User.EMAIL_LENGTH,
+        max_length=EMAIL_LENGTH,
         required=True
     )
     username = serializers.CharField(
-        max_length=User.USERNAME_LENGTH,
+        max_length=USERNAME_LENGTH,
         required=True,
         validators=(validate_username,)
     )
@@ -38,11 +40,11 @@ class AuthSignupSerializer(serializers.Serializer):
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
-        max_length=User.CONFIRMATION_CODE_LENGTH,
+        max_length=CONFIRMATION_CODE_LENGTH,
         required=True
     )
     username = serializers.CharField(
-        max_length=User.USERNAME_LENGTH,
+        max_length=USERNAME_LENGTH,
         required=True,
         validators=(validate_username,)
     )
@@ -57,18 +59,19 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context['request']
-        title_id = self.context['view'].kwargs.get('title_id')
-        if request.method == 'POST':
-            if Review.objects.filter(
-                author=request.user,
-                title=get_object_or_404(
-                    Title,
-                    id=title_id
-                )
-            ).exists():
-                raise serializers.ValidationError(
-                    'Вы уже оставляли отзыв на это произведение.'
-                )
+        if request.method != 'POST':
+            return data
+        title_id = self.context['view'].kwargs['title_id']
+        if Review.objects.filter(
+            author=request.user,
+            title=get_object_or_404(
+                Title,
+                id=title_id
+            )
+        ).exists():
+            raise serializers.ValidationError(
+                'Вы уже оставляли отзыв на это произведение.'
+            )
         return data
 
     class Meta:
@@ -108,22 +111,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения списка или экземляра модели Title."""
-
-    category = CategorySerializer()
-    genre = GenreSerializer(many=True)
-    rating = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        fields = (
-            'id', 'name', 'year', 'description', 'genre', 'category', 'rating'
-        )
-        read_only_fields = ('genre', 'category',)
-        model = Title
-
-
-class TitleCreateSerializer(serializers.ModelSerializer):
+class TitleCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор изменения или создания экземпляра модели Title."""
 
     genre = serializers.SlugRelatedField(
@@ -135,7 +123,21 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Category.objects.all()
     )
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+        )
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения списка или экземляра модели Title."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = serializers.IntegerField()
+
+    class Meta(TitleCreateUpdateSerializer.Meta):
+        read_only_fields = ('__all__',)

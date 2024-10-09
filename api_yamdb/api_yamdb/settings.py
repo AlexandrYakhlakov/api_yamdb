@@ -22,10 +22,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
+    'django_extensions',
+    'debug_toolbar',
     'rest_framework',
     'rest_framework_simplejwt',
     'reviews.apps.ReviewsConfig',
-    'api.apps.ApiConfig',
+    'api.apps.ApiConfig'
 ]
 
 MIDDLEWARE = [
@@ -36,6 +38,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'api_yamdb.urls'
@@ -129,4 +132,11 @@ SIMPLE_JWT = {
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
 FROM_EMAIL = 'author@mail.ru'
+
+CONFORMATION_CODE_CHARACTER_SET = '0123456789'
