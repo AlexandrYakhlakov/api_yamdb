@@ -13,7 +13,7 @@ from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import AdminOrReadOnly, AdminOnly, AdminModerator
+from api.permissions import AdminOrReadOnly, AdminOnly, AdminOrModeratorOrOwnerOrReadOnly
 from api.serializers import (
     SignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
@@ -109,7 +109,7 @@ def get_token(request):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, AdminModerator,
+        permissions.IsAuthenticatedOrReadOnly, AdminOrModeratorOrOwnerOrReadOnly,
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
@@ -129,7 +129,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [
         permissions.IsAuthenticatedOrReadOnly,
-        AdminModerator
+        AdminOrModeratorOrOwnerOrReadOnly
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
