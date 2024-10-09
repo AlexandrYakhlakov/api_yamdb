@@ -17,14 +17,18 @@ def validate_year_title(value):
     return value
 
 
-def validate_username(value):
-    if value == USER_PROFILE_PATH:
-        raise ValidationError('Логин не может принимать значение "me"')
-    if not re.match(r'^[\w.@+-]+\Z', value):
+def validate_username(username):
+    if username == USER_PROFILE_PATH:
         raise ValidationError(
-            (
-                'Некорректный логин. Логин может содержать только символы из'
-                ' набора: латинские буквы, цифры, знак подчёркивания, точка,'
-                ' @, +, пробел.'
-            )
+            f'Логин не может принимать значение "{USER_PROFILE_PATH}"'
         )
+    username_pattern = r'^[\w.@+-]+\Z'
+    if not re.match(username_pattern, username):
+        invalid_chars = ''.join(
+            [char for char in username if not re.match(username_pattern, char)]
+        )
+        raise ValidationError(
+                'Некорректный логин. Логин не должен содержать символы:'
+                f'{invalid_chars} .'
+        )
+    return username

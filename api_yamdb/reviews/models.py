@@ -5,7 +5,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from reviews.constants import (
-    LEN_OF_SYMBL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
+    CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH,LEN_OF_SYMBL,
+    MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH
 )
 from reviews.validators import validate_username, validate_year_title
 from . constants import MIN_SCORE, MAX_SCORE
@@ -16,23 +17,18 @@ Role = namedtuple('Role', ('role', 'widget'))
 ADMIN = Role('admin', 'Администратор')
 MODERATOR = Role('moderator', 'Модератор')
 AUTH_USER = Role('user', 'Пользователь')
+ROLE_CHOICES = (
+    (*ADMIN,),
+    (*MODERATOR,),
+    (*AUTH_USER,)
+)
 
 
 class User(AbstractUser):
-    USERNAME_LENGTH = 150
-    EMAIL_LENGTH = 254
-    CONFIRMATION_CODE_LENGTH = 5
-    ROLE_LENGTH = 9
-
-    ROLE_CHOICES = (
-        (*ADMIN,),
-        (*MODERATOR,),
-        (*AUTH_USER,)
-    )
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=AUTH_USER.role,
-        max_length=ROLE_LENGTH,
+        max_length=max(len(role[0]) for role in ROLE_CHOICES),
         verbose_name='Роль',
         blank=True
     )
@@ -61,14 +57,18 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN.role or self.is_superuser
+        return (
+                self.role == ADMIN.role
+                or self.is_superuser
+                or self.is_staff
+        )
 
     @property
     def is_moderator(self):
         return self.role == MODERATOR.role
 
     class Meta:
-        ordering = ('-date_joined',)
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

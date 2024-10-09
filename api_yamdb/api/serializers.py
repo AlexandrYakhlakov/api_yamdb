@@ -1,36 +1,38 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
+from reviews.constants import (
+    EMAIL_LENGTH, CONFIRMATION_CODE_LENGTH, USERNAME_LENGTH
+)
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
 )
 from reviews.validators import validate_username
 
 
-class BaseUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
+    def validate_username(self, username):
+        return validate_username(username)
 
-class UserSerializer(BaseUserSerializer):
-    ...
 
-
-class AuthUserInfoSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
+class AuthUserInfoSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
 
 
-class AuthSignupSerializer(serializers.Serializer):
+class SignupSerializer(serializers.Serializer):
     email = serializers.EmailField(
-        max_length=User.EMAIL_LENGTH,
+        max_length=EMAIL_LENGTH,
         required=True
     )
     username = serializers.CharField(
-        max_length=User.USERNAME_LENGTH,
+        max_length=USERNAME_LENGTH,
         required=True,
         validators=(validate_username,)
     )
@@ -38,11 +40,11 @@ class AuthSignupSerializer(serializers.Serializer):
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
-        max_length=User.CONFIRMATION_CODE_LENGTH,
+        max_length=CONFIRMATION_CODE_LENGTH,
         required=True
     )
     username = serializers.CharField(
-        max_length=User.USERNAME_LENGTH,
+        max_length=USERNAME_LENGTH,
         required=True,
         validators=(validate_username,)
     )
