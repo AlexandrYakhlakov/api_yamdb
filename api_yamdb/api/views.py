@@ -26,7 +26,7 @@ from reviews.constants import USER_PROFILE_PATH, USED_CODE_VALUE
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    permission_classes = (AdminOnly,)
     serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
