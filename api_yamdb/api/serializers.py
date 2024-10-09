@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.constants import (
-    EMAIL_LENGTH, CONFIRMATION_CODE_LENGTH, USERNAME_LENGTH
+    EMAIL_LENGTH, USERNAME_LENGTH
 )
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
@@ -40,7 +41,7 @@ class SignupSerializer(serializers.Serializer):
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
-        max_length=CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True
     )
     username = serializers.CharField(

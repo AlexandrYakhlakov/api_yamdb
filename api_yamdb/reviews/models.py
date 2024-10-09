@@ -1,12 +1,13 @@
 from collections import namedtuple
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from reviews.constants import (
-    CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH, LEN_OF_SYMBL,
-    MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
+    EMAIL_LENGTH, LEN_OF_SYMBL, MAX_LENGTH_NAME,
+    MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
 )
 from reviews.validators import validate_username, validate_year_title
 
@@ -38,7 +39,7 @@ class User(AbstractUser):
         blank=True,
         null=True,
         default=None,
-        max_length=CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
     )
 
     email = models.EmailField(

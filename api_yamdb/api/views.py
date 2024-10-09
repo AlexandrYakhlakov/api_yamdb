@@ -25,7 +25,6 @@ from api.serializers import (
 from api.utils import generate_confirmation_code
 from api.viewsets import CreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
-from reviews.constants import USER_PROFILE_PATH, USED_CODE_VALUE
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -40,7 +39,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         methods=['PATCH', 'GET'],
         detail=False,
-        url_path=USER_PROFILE_PATH,
+        url_path=settings.USER_PROFILE_PATH,
         permission_classes=(permissions.IsAuthenticated,)
     )
     def auth_user_info(self, request):
@@ -91,7 +90,7 @@ def get_token(request):
     serializer = GetTokenSerializer(data=data)
     serializer.is_valid(raise_exception=True)
     user = get_object_or_404(User, username=data['username'])
-    if user.confirmation_code == USED_CODE_VALUE:
+    if user.confirmation_code == settings.USED_CODE_VALUE:
         raise ValidationError(
             dict(message='Профиль уже был подтвержден')
         )
@@ -99,7 +98,7 @@ def get_token(request):
         raise ValidationError(
             dict(message='Некорректный код подтверждения')
         )
-    user.confirmation_code = USED_CODE_VALUE
+    user.confirmation_code = settings.USED_CODE_VALUE
     user.save()
 
     token = RefreshToken.for_user(user).access_token
