@@ -12,7 +12,7 @@ from reviews.models import (
 
 
 class Command(BaseCommand):
-    DIRECTORY = os.path.join(settings.BASE_DIR, 'static', 'data')
+    DIRECTORY = os.path.join(settings.BASE_DIR, 'test_data', 'csv_files')
     MODEL_FILE = {
         User: 'users.csv',
         Category: 'category.csv',
