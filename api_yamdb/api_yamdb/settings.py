@@ -22,12 +22,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
+    'django_extensions',
+    'debug_toolbar',
     'rest_framework',
     'rest_framework_simplejwt',
     'reviews.apps.ReviewsConfig',
-    'api.apps.ApiConfig',
-    'django_extensions',
-    'debug_toolbar',
+    'api.apps.ApiConfig'  
 ]
 
 MIDDLEWARE = [
@@ -136,3 +136,5 @@ EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+FROM_EMAIL = 'author@mail.ru'

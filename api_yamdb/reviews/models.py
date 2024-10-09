@@ -4,9 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from api.constants import (
-    LEN_OF_SYMBL, MAX_LENGTH_DESCRIPTION,
-    MAX_LENGTH_NAME, MAX_LENGTH_SLUG
+from reviews.constants import (
+    LEN_OF_SYMBL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG
 )
 from reviews.validators import validate_username, validate_year
 from . constants import MIN_SCORE, MAX_SCORE
@@ -21,6 +20,9 @@ AUTH_USER = Role('user', 'Пользователь')
 class User(AbstractUser):
     USERNAME_LENGTH = 150
     EMAIL_LENGTH = 254
+    CONFIRMATION_CODE_LENGTH = 5
+    ROLE_LENGTH = 9
+
     ROLE_CHOICES = (
         (*ADMIN,),
         (*MODERATOR,),
@@ -29,20 +31,19 @@ class User(AbstractUser):
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=AUTH_USER.role,
-        max_length=50,
+        max_length=ROLE_LENGTH,
         verbose_name='Роль',
         blank=True
     )
-    bio = models.CharField(
+    bio = models.TextField(
         blank=True,
-        max_length=500,
         verbose_name='Биография'
     )
     confirmation_code = models.CharField(
         blank=True,
         null=True,
         default=None,
-        max_length=36,
+        max_length=CONFIRMATION_CODE_LENGTH,
     )
 
     email = models.EmailField(
@@ -66,7 +67,9 @@ class User(AbstractUser):
         return self.role == MODERATOR.role
 
     class Meta:
-        ordering = ('-id',)
+        ordering = ('-date_joined',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
 
 class Title(models.Model):
@@ -80,7 +83,6 @@ class Title(models.Model):
     description = models.TextField(
         blank=True,
         null=True,
-        max_length=MAX_LENGTH_DESCRIPTION,
         verbose_name='Описание произведения',
         help_text='Опишите вкратце ваше произведение'
     )
@@ -101,7 +103,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=[validate_year],
+        validators=(validate_year,),
         verbose_name='Год произведения',
     )
 
@@ -114,56 +116,57 @@ class Title(models.Model):
         return self.name[:LEN_OF_SYMBL]
 
 
-class Genre(models.Model):
-    """Модель для Жанров произведений."""
+class CommonData(models.Model):
+    """Абстрактный класс."""
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
-        verbose_name='Жанр',
-        help_text='К какому жанру относится произведение'
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
         unique=True,
-        verbose_name='Слаг жанра',
         help_text=('Идентификатор страницы для URL; разрешены символы '
                    'латиницы, цифры, дефис и подчёркивание.'),
     )
 
     class Meta:
+        abstract = True
         ordering = ('name', )
-        verbose_name = 'Жанр',
-        verbose_name_plural = 'Жанры'
 
     def __str__(self) -> str:
         return self.name[:LEN_OF_SYMBL]
 
 
-class Category(models.Model):
+class Genre(CommonData):
+    """Модель для Жанров произведений."""
+
+    class Meta(CommonData.Meta):
+        verbose_name = 'Жанр',
+        verbose_name_plural = 'Жанры'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field_name = self._meta.get_field('name')
+        field_slug = self._meta.get_field('slug')
+        field_name.verbose_name = 'Жанр'
+        field_name.help_text = 'К какому жанру относится произведение'
+        field_slug.verbose_name = 'Слаг жанра'
+
+
+class Category(CommonData):
     """Модель для Категорий произведений."""
 
-    name = models.CharField(
-        max_length=MAX_LENGTH_NAME,
-        verbose_name='Категория',
-        help_text='Название категории произведения',
-    )
-    slug = models.SlugField(
-        max_length=MAX_LENGTH_SLUG,
-        unique=True,
-        verbose_name='Слаг категории',
-        help_text=(
-            'Идентификатор страницы для URL; разрешены символы '
-            'латиницы, цифры, дефис и подчёркивание.'
-        ),
-    )
+    class Meta(CommonData.Meta):
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
 
-    class Meta:
-        ordering = ('name',)
-        verbose_name = "Категория"
-        verbose_name_plural = "Категории"
-
-    def __str__(self):
-        return self.name[:LEN_OF_SYMBL]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field_name = self._meta.get_field('name')
+        field_slug = self._meta.get_field('slug')
+        field_name.verbose_name = 'Категория'
+        field_name.help_text = 'Название категории произведения'
+        field_slug.verbose_name = 'Слаг категории'
 
 
 class ReviewCommentBase(models.Model):
@@ -186,8 +189,9 @@ class ReviewCommentBase(models.Model):
 
 class Review(ReviewCommentBase):
     score = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(MIN_SCORE),
-                    MaxValueValidator(MAX_SCORE)
+        validators=[
+            MinValueValidator(MIN_SCORE),
+            MaxValueValidator(MAX_SCORE)
         ],
         verbose_name='Оценка'
     )

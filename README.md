@@ -12,10 +12,10 @@ api_yamdb
 
 ## Стек:
 * python3.9
-* Django 3.2
-* DRF 3.12.4
-* djangorestframework-simplejwt 5.3.1
-* PyJWT 2.5.0
+* Django
+* DRF
+* djangorestframework-simplejwt
+* PyJWT
 * SQLite3
 
 ## Установка и запуск проекта:
@@ -42,15 +42,19 @@ cd api_yamdb
 ```bash
 python manage.py migrate
 ```
+* Заполнить БД тестовыми данными:
+```bash
+python manage.py seed_test_data
+```
 * Запуск
 ```bash
 python manage.py runserver
 ```
 
-## API документация: http://127.0.0.1:8000/redoc/
+## [API Документация](http://127.0.0.1:8000/redoc/)
 
 ## Функциональности проекта:
-* Админ панель: http://127.0.0.1:8000/admin/
+* [Админ панель](http://127.0.0.1:8000/admin/)
 * Регистрация и аутентификация
 * Выдача JWT-токена пользователю
 * Обновление кодов подтверждения
@@ -62,8 +66,7 @@ python manage.py runserver
 * Взаимодействие с комментариями к отзыву
 * Взаимодействие с учетными записями пользователей
 
-## Заполнение БД тестовыми данными:
-Для заполнения БД тестовыми выполнить команду:
-```bash
-python manage.py seed_test_data
-```
+## Авторы:
+- Александр Яхлаков. Github: [@AlexandrYakhlakov](https://github.com/AlexandrYakhlakov/)
+- Артём Гадалин. Github: [@gadalin-artyom](https://github.com/gadalin-artyom/)
+- Евгений Шутов. Github: [@EvgenyShutov](https://github.com/EvgenyShutov/)
