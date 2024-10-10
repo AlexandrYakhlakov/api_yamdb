@@ -19,11 +19,11 @@ from api.permissions import (
 from api.serializers import (
     SignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
-    ReviewSerializer, TitleSerializer, TitleCreateUpdateSerializer,
+    ReviewSerializer, TitleSerializer, TitleWriteSerializer,
     UserSerializer,
 )
 from api.utils import generate_confirmation_code
-from api.viewsets import CreateListDestroyViewSet
+from api.viewsets import CreateListDestroyForProjectResourcesViewSet
 from reviews.models import Category, Genre, Review, Title, User
 from reviews.constants import USER_PROFILE_PATH, USED_CODE_VALUE
 
@@ -167,17 +167,17 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return TitleSerializer
-        return TitleCreateUpdateSerializer
+        return TitleWriteSerializer
 
 
-class GenreViewSet(CreateListDestroyViewSet):
+class GenreViewSet(CreateListDestroyForProjectResourcesViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyForProjectResourcesViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Category.objects.all()

@@ -120,6 +120,7 @@ class NameAndSlugAbstract(models.Model):
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
+        verbose_name='Название',
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
@@ -145,24 +146,12 @@ class Genre(NameAndSlugAbstract):
         verbose_name_plural = 'Жанры'
 
 
-Genre._meta.get_field('name').verbose_name = 'Жанр'
-Genre._meta.get_field('name').help_text = (
-    'К какому жанру относится произведение'
-)
-
-
 class Category(NameAndSlugAbstract):
     """Модель для Категорий произведений."""
 
     class Meta(NameAndSlugAbstract.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
-
-
-Category._meta.get_field('name').verbose_name = 'Категория'
-Category._meta.get_field('name').help_text = (
-    'К какой категории относится произведение'
-)
 
 
 class UserPublicationBase(models.Model):
