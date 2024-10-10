@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
@@ -19,13 +19,12 @@ from api.permissions import (
 from api.serializers import (
     SignupSerializer, AuthUserInfoSerializer, CategorySerializer,
     CommentSerializer, GenreSerializer, GetTokenSerializer,
-    ReviewSerializer, TitleSerializer, TitleCreateUpdateSerializer,
+    ReviewSerializer, TitleSerializer, TitleWriteSerializer,
     UserSerializer,
 )
 from api.utils import generate_confirmation_code
-from api.viewsets import CreateListDestroyViewSet
+from api.viewsets import CreateListDestroyForProjectResourcesViewSet
 from reviews.models import Category, Genre, Review, Title, User
-from reviews.constants import USER_PROFILE_PATH, USED_CODE_VALUE
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -40,7 +39,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         methods=['PATCH', 'GET'],
         detail=False,
-        url_path=USER_PROFILE_PATH,
+        url_path=settings.USER_PROFILE_PATH,
         permission_classes=(permissions.IsAuthenticated,)
     )
     def auth_user_info(self, request):
@@ -67,9 +66,23 @@ def auth_signup(request):
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
-        UserSerializer(data=request.data).is_valid(raise_exception=True)
+        error_message = 'Пользователь с таким {} уже существует.'
+
+        username = serializer.validated_data['username']
+        email = serializer.validated_data['email']
+
+        duplicate_username, duplicate_email = User.objects.filter(
+            Q(username=username) | Q(email=email)
+        ).values_list('username', 'email').first()
+
+        raise ValidationError(
+            dict(username=error_message.format('username'))
+            if username == duplicate_username
+            else dict(email=error_message.format('email'))
+        )
+
     user.confirmation_code = generate_confirmation_code()
-    user.save()
+    user.save(update_fields=['confirmation_code'])
     send_mail(
         subject='Код подтверждения учетной записи',
         message=f'Для подтверждения учетной записи введите код:'
@@ -87,20 +100,22 @@ def auth_signup(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def get_token(request):
-    data = request.data
-    serializer = GetTokenSerializer(data=data)
+    serializer = GetTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = get_object_or_404(User, username=data['username'])
-    if user.confirmation_code == USED_CODE_VALUE:
+    validated_data = serializer.validated_data
+    username = validated_data['username']
+    confirmation_code = validated_data['confirmation_code']
+    user = get_object_or_404(User, username=username)
+    if user.confirmation_code == settings.USED_CODE_VALUE:
         raise ValidationError(
-            dict(message='Профиль уже был подтвержден')
+            dict(message='Код подтверждения уже был использован.')
         )
-    elif user.confirmation_code != data['confirmation_code']:
+    elif user.confirmation_code != confirmation_code:
         raise ValidationError(
             dict(message='Некорректный код подтверждения')
         )
-    user.confirmation_code = USED_CODE_VALUE
-    user.save()
+    user.confirmation_code = generate_confirmation_code(is_use_code=True)
+    user.save(update_fields=['confirmation_code'])
 
     token = RefreshToken.for_user(user).access_token
     return Response(
@@ -112,7 +127,6 @@ def get_token(request):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly,
         AdminOrModeratorOrOwnerOrReadOnly,
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
@@ -132,7 +146,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly,
         AdminOrModeratorOrOwnerOrReadOnly
     ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
@@ -167,17 +180,17 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return TitleSerializer
-        return TitleCreateUpdateSerializer
+        return TitleWriteSerializer
 
 
-class GenreViewSet(CreateListDestroyViewSet):
+class GenreViewSet(CreateListDestroyForProjectResourcesViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyForProjectResourcesViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Category.objects.all()

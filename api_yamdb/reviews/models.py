@@ -1,15 +1,15 @@
 from collections import namedtuple
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from reviews.constants import (
-    CONFIRMATION_CODE_LENGTH, EMAIL_LENGTH, LEN_OF_SYMBL,
-    MAX_LENGTH_NAME, MAX_LENGTH_SLUG, USERNAME_LENGTH
+    EMAIL_LENGTH, LEN_OF_SYMBL, MAX_LENGTH_NAME,
+    MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
 )
 from reviews.validators import validate_username, validate_year_title
-from . constants import MIN_SCORE, MAX_SCORE
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -27,7 +27,7 @@ class User(AbstractUser):
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=AUTH_USER.role,
-        max_length=max(len(role[0]) for role in ROLE_CHOICES),
+        max_length=max(len(role) for role, _ in ROLE_CHOICES),
         verbose_name='Роль',
         blank=True
     )
@@ -39,7 +39,7 @@ class User(AbstractUser):
         blank=True,
         null=True,
         default=None,
-        max_length=CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
     )
 
     email = models.EmailField(
@@ -58,7 +58,6 @@ class User(AbstractUser):
     def is_admin(self):
         return (
             self.role == ADMIN.role
-            or self.is_superuser
             or self.is_staff
         )
 
@@ -121,6 +120,7 @@ class NameAndSlugAbstract(models.Model):
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
+        verbose_name='Название',
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
@@ -146,12 +146,6 @@ class Genre(NameAndSlugAbstract):
         verbose_name_plural = 'Жанры'
 
 
-Genre._meta.get_field('name').verbose_name = 'Жанр'
-Genre._meta.get_field('name').help_text = (
-    'К какому жанру относится произведение'
-)
-
-
 class Category(NameAndSlugAbstract):
     """Модель для Категорий произведений."""
 
@@ -160,13 +154,7 @@ class Category(NameAndSlugAbstract):
         verbose_name_plural = 'Категории'
 
 
-Category._meta.get_field('name').verbose_name = 'Категория'
-Category._meta.get_field('name').help_text = (
-    'К какой категории относится произведение'
-)
-
-
-class ReviewCommentBase(models.Model):
+class UserPublicationBase(models.Model):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
@@ -184,7 +172,7 @@ class ReviewCommentBase(models.Model):
         default_related_name = '%(class)ss'
 
 
-class Review(ReviewCommentBase):
+class Review(UserPublicationBase):
     score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(MIN_SCORE),
@@ -195,11 +183,10 @@ class Review(ReviewCommentBase):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews',
         verbose_name='Произведение'
     )
 
-    class Meta(ReviewCommentBase.Meta):
+    class Meta(UserPublicationBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -210,14 +197,13 @@ class Review(ReviewCommentBase):
         )
 
 
-class Comment(ReviewCommentBase):
+class Comment(UserPublicationBase):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        related_name='comments',
         verbose_name='Отзыв'
     )
 
-    class Meta(ReviewCommentBase.Meta):
+    class Meta(UserPublicationBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
