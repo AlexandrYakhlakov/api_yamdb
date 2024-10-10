@@ -154,7 +154,7 @@ class Category(NameAndSlugAbstract):
         verbose_name_plural = 'Категории'
 
 
-class UserPublicationBase(models.Model):
+class PublicationBase(models.Model):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
@@ -172,7 +172,7 @@ class UserPublicationBase(models.Model):
         default_related_name = '%(class)ss'
 
 
-class Review(UserPublicationBase):
+class Review(PublicationBase):
     score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(MIN_SCORE),
@@ -186,7 +186,7 @@ class Review(UserPublicationBase):
         verbose_name='Произведение'
     )
 
-    class Meta(UserPublicationBase.Meta):
+    class Meta(PublicationBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -197,13 +197,13 @@ class Review(UserPublicationBase):
         )
 
 
-class Comment(UserPublicationBase):
+class Comment(PublicationBase):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв'
     )
 
-    class Meta(UserPublicationBase.Meta):
+    class Meta(PublicationBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
