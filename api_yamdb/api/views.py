@@ -106,20 +106,27 @@ def get_token(request):
     username = validated_data['username']
     confirmation_code = validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    if user.confirmation_code == settings.USED_CODE_VALUE:
+    current_user_code = user.confirmation_code
+
+    # Обновить по пользователю confirmation_code на USED_CODE_VALUE,
+    # если там еще нет этого значения
+    if current_user_code != settings.USED_CODE_VALUE:
+        user.confirmation_code = settings.USED_CODE_VALUE
+        user.save(update_fields=['confirmation_code'])
+
+    if (
+        current_user_code == settings.USED_CODE_VALUE
+        or current_user_code != confirmation_code
+    ):
         raise ValidationError(
-            dict(message='Код подтверждения уже был использован.')
+            dict(
+                message='Некорректный код подтверждения. Запросите новый код.'
+            )
         )
-    elif user.confirmation_code != confirmation_code:
-        raise ValidationError(
-            dict(message='Некорректный код подтверждения')
-        )
-    user.confirmation_code = generate_confirmation_code(is_use_code=True)
-    user.save(update_fields=['confirmation_code'])
 
     token = RefreshToken.for_user(user).access_token
     return Response(
-        dict(username=user.username, token=str(token)),
+        dict(token=str(token)),
         status=status.HTTP_200_OK
     )
 
