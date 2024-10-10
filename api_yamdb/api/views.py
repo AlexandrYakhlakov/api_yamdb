@@ -23,7 +23,7 @@ from api.serializers import (
     UserSerializer,
 )
 from api.utils import generate_confirmation_code
-from api.viewsets import CreateListDestroyForProjectResourcesViewSet
+from api.viewsets import ContentBaseCreateListDestroyViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 
@@ -183,15 +183,15 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class GenreViewSet(CreateListDestroyForProjectResourcesViewSet):
+class GenreViewSet(ContentBaseCreateListDestroyViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(CreateListDestroyForProjectResourcesViewSet):
-    """Класс для выполнения операций с моделью Genre."""
+class CategoryViewSet(ContentBaseCreateListDestroyViewSet):
+    """Класс для выполнения операций с моделью Category."""
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
