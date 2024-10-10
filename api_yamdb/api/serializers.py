@@ -2,24 +2,21 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
+from api.mixins import UserNameValidationMixin
 from reviews.constants import (
     EMAIL_LENGTH, USERNAME_LENGTH
 )
 from reviews.models import (
     Category, Comment, Genre, Review, Title, User
 )
-from reviews.validators import validate_username
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UserNameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-
-    def validate_username(self, username):
-        return validate_username(username)
 
 
 class AuthUserInfoSerializer(UserSerializer):
@@ -27,27 +24,25 @@ class AuthUserInfoSerializer(UserSerializer):
         read_only_fields = ('role',)
 
 
-class SignupSerializer(serializers.Serializer):
+class SignupSerializer(UserNameValidationMixin, serializers.Serializer):
     email = serializers.EmailField(
         max_length=EMAIL_LENGTH,
         required=True
     )
     username = serializers.CharField(
         max_length=USERNAME_LENGTH,
-        required=True,
-        validators=(validate_username,)
+        required=True
     )
 
 
-class GetTokenSerializer(serializers.Serializer):
+class GetTokenSerializer(UserNameValidationMixin, serializers.Serializer):
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True
     )
     username = serializers.CharField(
         max_length=USERNAME_LENGTH,
-        required=True,
-        validators=(validate_username,)
+        required=True
     )
 
 
