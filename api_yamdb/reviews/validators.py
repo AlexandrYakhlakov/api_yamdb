@@ -5,15 +5,15 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 
 
-def validate_year_title(value):
+def validate_year(year):
     """Валидатор проверки года выпуска произведения."""
     current_year = date.today().year
-    if value > current_year:
+    if year > current_year:
         raise ValidationError(
-            f'Год выпуска произведения ({value}) не должен '
+            f'Год выпуска произведения ({year}) не должен '
             f'быть больше текущего года ({current_year}).'
         )
-    return value
+    return year
 
 
 def validate_username(username):
@@ -24,10 +24,10 @@ def validate_username(username):
     username_pattern = r'^[\w.@+-]+\Z'
     if not re.match(username_pattern, username):
         invalid_chars = ''.join(
-            [char for char in username if not re.match(username_pattern, char)]
+            set(re.findall(r'[^\w.@+-]', username))
         )
         raise ValidationError(
-            'Некорректный логин. Логин не должен содержать символы:'
-            f'{invalid_chars} .'
+            'Некорректный логин. Логин не должен содержать символы: '
+            f'{invalid_chars}'
         )
     return username
