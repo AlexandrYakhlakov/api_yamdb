@@ -9,7 +9,7 @@ from reviews.constants import (
     EMAIL_LENGTH, LEN_OF_SYMBL, MAX_LENGTH_NAME,
     MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
 )
-from reviews.validators import validate_username, validate_year_title
+from reviews.validators import validate_username, validate_year
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -102,7 +102,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=(validate_year_title,),
+        validators=(validate_year,),
         verbose_name='Год произведения',
     )
 
