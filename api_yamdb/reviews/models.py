@@ -9,7 +9,7 @@ from reviews.constants import (
     EMAIL_LENGTH, LEN_OF_SYMBL, MAX_LENGTH_NAME,
     MAX_LENGTH_SLUG, USERNAME_LENGTH, MIN_SCORE, MAX_SCORE
 )
-from reviews.validators import validate_username, validate_year_title
+from reviews.validators import validate_username, validate_year
 
 
 Role = namedtuple('Role', ('role', 'widget'))
@@ -105,7 +105,7 @@ class Title(models.Model):
         help_text='Название категории произведения'
     )
     year = models.PositiveSmallIntegerField(
-        validators=(validate_year_title,),
+        validators=(validate_year,),
         verbose_name='Год произведения',
     )
 
@@ -157,7 +157,7 @@ class Category(NameAndSlugAbstract):
         verbose_name_plural = 'Категории'
 
 
-class UserPublicationBase(models.Model):
+class PublicationBase(models.Model):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
@@ -175,7 +175,7 @@ class UserPublicationBase(models.Model):
         default_related_name = '%(class)ss'
 
 
-class Review(UserPublicationBase):
+class Review(PublicationBase):
     score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(MIN_SCORE),
@@ -189,7 +189,7 @@ class Review(UserPublicationBase):
         verbose_name='Произведение'
     )
 
-    class Meta(UserPublicationBase.Meta):
+    class Meta(PublicationBase.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -200,13 +200,13 @@ class Review(UserPublicationBase):
         )
 
 
-class Comment(UserPublicationBase):
+class Comment(PublicationBase):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв'
     )
 
-    class Meta(UserPublicationBase.Meta):
+    class Meta(PublicationBase.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'

@@ -3,13 +3,17 @@ from rest_framework import filters, mixins, viewsets
 from api.permissions import AdminOrReadOnly
 
 
-class CreateListDestroyForProjectResourcesViewSet(
+class ContentBaseCreateListDestroyViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
-    """Cоздаём, просматриваем, удаляем."""
+    """Cоздаём, просматриваем, удаляем.
+
+    Дополниительно устанавливаем разрешение, фильтруем
+    и задаем поле для поиска объектов отдельных экземпляров модели.
+    """
 
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
