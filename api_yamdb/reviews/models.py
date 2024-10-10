@@ -36,6 +36,7 @@ class User(AbstractUser):
         verbose_name='Биография'
     )
     confirmation_code = models.CharField(
+        verbose_name='Код подтверждения',
         blank=True,
         null=True,
         default=None,
@@ -43,12 +44,14 @@ class User(AbstractUser):
     )
 
     email = models.EmailField(
+        verbose_name='E-mail',
         max_length=EMAIL_LENGTH,
         blank=False,
         unique=True
     )
 
     username = models.CharField(
+        verbose_name='Логин',
         max_length=USERNAME_LENGTH,
         unique=True,
         validators=(validate_username,)

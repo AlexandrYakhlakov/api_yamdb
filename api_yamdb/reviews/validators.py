@@ -24,10 +24,10 @@ def validate_username(username):
     username_pattern = r'^[\w.@+-]+\Z'
     if not re.match(username_pattern, username):
         invalid_chars = ''.join(
-            [char for char in username if not re.match(username_pattern, char)]
+            set(re.findall(r'[^\w.@+-]', username))
         )
         raise ValidationError(
-            'Некорректный логин. Логин не должен содержать символы:'
-            f'{invalid_chars} .'
+            'Некорректный логин. Логин не должен содержать символы: '
+            f'{invalid_chars}'
         )
     return username
