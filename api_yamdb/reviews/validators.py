@@ -1,9 +1,8 @@
 from datetime import date
 import re
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
-
-from reviews.constants import USER_PROFILE_PATH
 
 
 def validate_year_title(value):
@@ -18,9 +17,9 @@ def validate_year_title(value):
 
 
 def validate_username(username):
-    if username == USER_PROFILE_PATH:
+    if username == settings.USER_PROFILE_PATH:
         raise ValidationError(
-            f'Логин не может принимать значение "{USER_PROFILE_PATH}"'
+            f'Логин не может принимать значение "{settings.USER_PROFILE_PATH}"'
         )
     username_pattern = r'^[\w.@+-]+\Z'
     if not re.match(username_pattern, username):
