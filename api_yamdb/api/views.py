@@ -77,9 +77,15 @@ def auth_signup(request):
         ).values_list(USERNAME_FIELD_NAME).first()
 
         raise ValidationError(
-            dict(USERNAME_FIELD=USER_EXISTS_ERROR.format(USERNAME_FIELD_NAME))
+            {
+                USERNAME_FIELD_NAME: USER_EXISTS_ERROR.format(
+                    USERNAME_FIELD_NAME
+                )
+            }
             if username == duplicate_username
-            else dict(EMAIL_FIELD=USER_EXISTS_ERROR.format(EMAIL_FIELD_NAME))
+            else {
+                EMAIL_FIELD_NAME: USER_EXISTS_ERROR.format(EMAIL_FIELD_NAME)
+            }
         )
 
     user.confirmation_code = generate_confirmation_code()
