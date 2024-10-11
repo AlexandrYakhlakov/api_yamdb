@@ -40,7 +40,7 @@ class GetTokenSerializer(UserNameValidationMixin, serializers.Serializer):
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
-        validators= (
+        validators=(
             RegexValidator(
                 regex=r'^[0-9]+$',
                 message='Значение кода может состоять только из цифр'
@@ -51,7 +51,6 @@ class GetTokenSerializer(UserNameValidationMixin, serializers.Serializer):
         max_length=USERNAME_LENGTH,
         required=True
     )
-
 
 
 class ReviewSerializer(serializers.ModelSerializer):

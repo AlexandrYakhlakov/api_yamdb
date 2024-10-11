@@ -17,4 +17,3 @@ def generate_confirmation_code() -> str:
 def save_use_confirmation_code(user: User) -> None:
     user.confirmation_code = settings.USED_CODE_VALUE
     user.save(update_fields=['confirmation_code'])
-
