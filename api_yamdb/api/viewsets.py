@@ -3,7 +3,7 @@ from rest_framework import filters, mixins, viewsets
 from api.permissions import AdminOrReadOnly
 
 
-class ContentBaseCreateListDestroyViewSet(
+class CreateListDestroyAdminOrReadLookupSearchFilterViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.DestroyModelMixin,

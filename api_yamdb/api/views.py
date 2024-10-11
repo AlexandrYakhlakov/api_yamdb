@@ -22,23 +22,24 @@ from api.serializers import (
     ReviewSerializer, TitleSerializer, TitleWriteSerializer,
     UserSerializer,
 )
-from api.utils import generate_confirmation_code
-from api.viewsets import ContentBaseCreateListDestroyViewSet
+from api.utils import (
+    generate_confirmation_code, save_use_confirmation_code
+)
+from api.viewsets import CreateListDestroyAdminOrReadLookupSearchFilterViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 USER_EXISTS_ERROR = 'Пользователь с таким {} уже существует.'
-USERNAME_FIELD_NAME = 'username'
-EMAIL_FIELD_NAME = 'email'
-CONFIRMATION_CODE_FIELD_NAME = 'confirmation_code'
+USERNAME_EXISTS_ERROR = dict(username=USER_EXISTS_ERROR.format('username'))
+EMAIL_EXISTS_ERROR = dict(email=USER_EXISTS_ERROR.format('email'))
 
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOnly,)
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    lookup_field = USERNAME_FIELD_NAME
+    lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
-    search_fields = (USERNAME_FIELD_NAME,)
+    search_fields = ('username',)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
     @action(
@@ -71,25 +72,16 @@ def auth_signup(request):
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
-        username = serializer.validated_data[USERNAME_FIELD_NAME]
-        duplicate_username = User.objects.filter(
-            username=username
-        ).values_list(USERNAME_FIELD_NAME).first()
-
+        username = serializer.validated_data['username']
+        duplicate_username = User.objects.filter(username=username).exists()
         raise ValidationError(
-            {
-                USERNAME_FIELD_NAME: USER_EXISTS_ERROR.format(
-                    USERNAME_FIELD_NAME
-                )
-            }
-            if username == duplicate_username
-            else {
-                EMAIL_FIELD_NAME: USER_EXISTS_ERROR.format(EMAIL_FIELD_NAME)
-            }
+            USERNAME_EXISTS_ERROR
+            if duplicate_username
+            else EMAIL_EXISTS_ERROR
         )
 
     user.confirmation_code = generate_confirmation_code()
-    user.save(update_fields=[CONFIRMATION_CODE_FIELD_NAME])
+    user.save(update_fields=['confirmation_code'])
     send_mail(
         subject='Код подтверждения учетной записи',
         message=f'Для подтверждения учетной записи введите код:'
@@ -110,31 +102,24 @@ def get_token(request):
     serializer = GetTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     validated_data = serializer.validated_data
-    username = validated_data[USERNAME_FIELD_NAME]
-    confirmation_code = validated_data[CONFIRMATION_CODE_FIELD_NAME]
+    username = validated_data['username']
+    confirmation_code = validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    current_confirmation_code = user.confirmation_code
 
-    # Обновить по пользователю confirmation_code на USED_CODE_VALUE,
-    # если там еще нет этого значения
-    if current_confirmation_code != settings.USED_CODE_VALUE:
-        user.confirmation_code = settings.USED_CODE_VALUE
-        user.save(update_fields=[CONFIRMATION_CODE_FIELD_NAME])
-
-    if (
-        current_confirmation_code == settings.USED_CODE_VALUE
-        or current_confirmation_code != confirmation_code
-    ):
-        raise ValidationError(
-            dict(
-                message='Некорректный код подтверждения. Запросите новый код.'
-            )
+    if confirmation_code == user.confirmation_code:
+        save_use_confirmation_code(user)
+        token = RefreshToken.for_user(user).access_token
+        return Response(
+            dict(token=str(token)),
+            status=status.HTTP_200_OK
         )
+    elif confirmation_code != settings.USED_CODE_VALUE:
+        save_use_confirmation_code(user)
 
-    token = RefreshToken.for_user(user).access_token
-    return Response(
-        dict(token=str(token)),
-        status=status.HTTP_200_OK
+    raise ValidationError(
+        dict(
+            message='Некорректный код подтверждения. Запросите новый код.'
+        )
     )
 
 
@@ -197,14 +182,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class GenreViewSet(ContentBaseCreateListDestroyViewSet):
+class GenreViewSet(CreateListDestroyAdminOrReadLookupSearchFilterViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(ContentBaseCreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyAdminOrReadLookupSearchFilterViewSet):
     """Класс для выполнения операций с моделью Category."""
 
     queryset = Category.objects.all()

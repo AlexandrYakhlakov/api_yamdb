@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
@@ -38,7 +39,13 @@ class SignupSerializer(UserNameValidationMixin, serializers.Serializer):
 class GetTokenSerializer(UserNameValidationMixin, serializers.Serializer):
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
-        required=True
+        required=True,
+        validators=(
+            RegexValidator(
+                regex=r'^[0-9]+$',
+                message='Значение кода может состоять только из цифр'
+            ),
+        )
     )
     username = serializers.CharField(
         max_length=USERNAME_LENGTH,
@@ -118,7 +125,7 @@ class TitleSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
         )
-        read_only_fields = ('__all__',)
+        read_only_fields = fields
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
