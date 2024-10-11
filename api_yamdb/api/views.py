@@ -27,7 +27,8 @@ from api.viewsets import CreateListDestroyAdminOrReadLookupSearchFilterViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 USER_EXISTS_ERROR = 'Пользователь с таким {} уже существует.'
-
+USERNAME_EXISTS_ERROR = dict(username=USER_EXISTS_ERROR.format('user'))
+EMAIL_EXISTS_ERROR = dict(email=USER_EXISTS_ERROR.format('email'))
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOnly,)
@@ -69,20 +70,11 @@ def auth_signup(request):
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
         username = serializer.validated_data['username']
-        duplicate_username = User.objects.filter(
-            username=username
-        ).values_list('username').first()
-
+        duplicate_username = User.objects.filter(username=username).exists()
         raise ValidationError(
-            {
-                'username': USER_EXISTS_ERROR.format(
-                    'username'
-                )
-            }
-            if username == duplicate_username
-            else {
-                 'email': USER_EXISTS_ERROR.format('email')
-            }
+            USERNAME_EXISTS_ERROR
+            if duplicate_username
+            else EMAIL_EXISTS_ERROR
         )
 
     user.confirmation_code = generate_confirmation_code()
