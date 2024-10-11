@@ -22,13 +22,16 @@ from api.serializers import (
     ReviewSerializer, TitleSerializer, TitleWriteSerializer,
     UserSerializer,
 )
-from api.utils import generate_confirmation_code
+from api.utils import (
+    generate_confirmation_code, save_use_confirmation_code
+)
 from api.viewsets import CreateListDestroyAdminOrReadLookupSearchFilterViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 USER_EXISTS_ERROR = 'Пользователь с таким {} уже существует.'
-USERNAME_EXISTS_ERROR = dict(username=USER_EXISTS_ERROR.format('user'))
+USERNAME_EXISTS_ERROR = dict(username=USER_EXISTS_ERROR.format('username'))
 EMAIL_EXISTS_ERROR = dict(email=USER_EXISTS_ERROR.format('email'))
+
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOnly,)
@@ -102,28 +105,21 @@ def get_token(request):
     username = validated_data['username']
     confirmation_code = validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    current_confirmation_code = user.confirmation_code
 
-    # Обновить по пользователю confirmation_code на USED_CODE_VALUE,
-    # если там еще нет этого значения
-    if current_confirmation_code != settings.USED_CODE_VALUE:
-        user.confirmation_code = settings.USED_CODE_VALUE
-        user.save(update_fields=['confirmation_code'])
-
-    if (
-        current_confirmation_code == settings.USED_CODE_VALUE
-        or current_confirmation_code != confirmation_code
-    ):
-        raise ValidationError(
-            dict(
-                message='Некорректный код подтверждения. Запросите новый код.'
-            )
+    if confirmation_code == user.confirmation_code:
+        save_use_confirmation_code(user)
+        token = RefreshToken.for_user(user).access_token
+        return Response(
+            dict(token=str(token)),
+            status=status.HTTP_200_OK
         )
+    elif confirmation_code != settings.USED_CODE_VALUE:
+        save_use_confirmation_code(user)
 
-    token = RefreshToken.for_user(user).access_token
-    return Response(
-        dict(token=str(token)),
-        status=status.HTTP_200_OK
+    raise ValidationError(
+        dict(
+            message='Некорректный код подтверждения. Запросите новый код.'
+        )
     )
 
 
