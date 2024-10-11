@@ -23,7 +23,7 @@ from api.serializers import (
     UserSerializer,
 )
 from api.utils import generate_confirmation_code
-from api.viewsets import ContentBaseCreateListDestroyViewSet
+from api.viewsets import CreateListDestroyAdminOrReadLookupSearchFilterViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 USER_EXISTS_ERROR = 'Пользователь с таким {} уже существует.'
@@ -197,14 +197,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class GenreViewSet(ContentBaseCreateListDestroyViewSet):
+class GenreViewSet(CreateListDestroyAdminOrReadLookupSearchFilterViewSet):
     """Класс для выполнения операций с моделью Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(ContentBaseCreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyAdminOrReadLookupSearchFilterViewSet):
     """Класс для выполнения операций с моделью Category."""
 
     queryset = Category.objects.all()
