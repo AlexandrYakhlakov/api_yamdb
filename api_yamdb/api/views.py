@@ -27,18 +27,15 @@ from api.viewsets import CreateListDestroyAdminOrReadLookupSearchFilterViewSet
 from reviews.models import Category, Genre, Review, Title, User
 
 USER_EXISTS_ERROR = 'Пользователь с таким {} уже существует.'
-USERNAME_FIELD_NAME = 'username'
-EMAIL_FIELD_NAME = 'email'
-CONFIRMATION_CODE_FIELD_NAME = 'confirmation_code'
 
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOnly,)
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    lookup_field = USERNAME_FIELD_NAME
+    lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
-    search_fields = (USERNAME_FIELD_NAME,)
+    search_fields = ('username',)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
     @action(
@@ -71,25 +68,25 @@ def auth_signup(request):
     try:
         user, _ = User.objects.get_or_create(**serializer.validated_data)
     except IntegrityError:
-        username = serializer.validated_data[USERNAME_FIELD_NAME]
+        username = serializer.validated_data['username']
         duplicate_username = User.objects.filter(
             username=username
-        ).values_list(USERNAME_FIELD_NAME).first()
+        ).values_list('username').first()
 
         raise ValidationError(
             {
-                USERNAME_FIELD_NAME: USER_EXISTS_ERROR.format(
-                    USERNAME_FIELD_NAME
+                'username': USER_EXISTS_ERROR.format(
+                    'username'
                 )
             }
             if username == duplicate_username
             else {
-                EMAIL_FIELD_NAME: USER_EXISTS_ERROR.format(EMAIL_FIELD_NAME)
+                 'email': USER_EXISTS_ERROR.format('email')
             }
         )
 
     user.confirmation_code = generate_confirmation_code()
-    user.save(update_fields=[CONFIRMATION_CODE_FIELD_NAME])
+    user.save(update_fields=['confirmation_code'])
     send_mail(
         subject='Код подтверждения учетной записи',
         message=f'Для подтверждения учетной записи введите код:'
@@ -110,8 +107,8 @@ def get_token(request):
     serializer = GetTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     validated_data = serializer.validated_data
-    username = validated_data[USERNAME_FIELD_NAME]
-    confirmation_code = validated_data[CONFIRMATION_CODE_FIELD_NAME]
+    username = validated_data['username']
+    confirmation_code = validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
     current_confirmation_code = user.confirmation_code
 
@@ -119,7 +116,7 @@ def get_token(request):
     # если там еще нет этого значения
     if current_confirmation_code != settings.USED_CODE_VALUE:
         user.confirmation_code = settings.USED_CODE_VALUE
-        user.save(update_fields=[CONFIRMATION_CODE_FIELD_NAME])
+        user.save(update_fields=['confirmation_code'])
 
     if (
         current_confirmation_code == settings.USED_CODE_VALUE
