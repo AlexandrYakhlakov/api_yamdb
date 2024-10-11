@@ -21,11 +21,11 @@ def validate_username(username):
         raise ValidationError(
             f'Логин не может принимать значение "{settings.USER_PROFILE_PATH}"'
         )
-    username_pattern = r'^[\w.@+-]+\Z'
-    if not re.match(username_pattern, username):
-        invalid_chars = ''.join(
-            set(re.findall(r'[^\w.@+-]', username))
-        )
+
+    invalid_chars = ''.join(
+        set(re.findall(r'[^\w.@+-]', username))
+    )
+    if invalid_chars:
         raise ValidationError(
             'Некорректный логин. Логин не должен содержать символы: '
             f'{invalid_chars}'
